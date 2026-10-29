@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>トラブルシューティング - Next-Gen Images マニュアル</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <button class="hamburger-btn" aria-label="メニューを開く">&#9776;</button>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2 style="color:#fff;">Next-Gen Images</h2>
+            <span class="version">v1.0.0</span>
+            <img src="images/main-visual.png" alt="" style="width:100%;border-radius:4px;margin-top:8px;">
+        </div>
+        <ul>
+            <li><a href="index.html">概要</a></li>
+            <li><a href="setup.html">インストール・初期設定</a></li>
+            <li><a href="settings.html">設定タブ</a></li>
+            <li><a href="bulk.html">一括変換タブ</a></li>
+            <li><a href="status.html">診断タブ</a></li>
+            <li><a href="media.html">メディアライブラリ</a></li>
+            <li><a href="delivery.html">サイトでの表示のしくみ</a></li>
+            <li><a href="cli.html">コマンドでの操作</a></li>
+            <li><a href="troubleshooting.html">トラブルシューティング</a></li>
+        </ul>
+    </nav>
+    <main class="content">
+        <h1>トラブルシューティング</h1>
+        <p class="lead">よくある問題とその解決方法をまとめています。</p>
+
+<figure class="infographic"><img src="images/infographics/troubleshooting-flow.png" alt="困ったときの確認の流れ" class="lightbox-trigger"><figcaption>症状 → 診断タブで確認 → 対処</figcaption></figure>
+<section><h2>よくある問題と解決策</h2>
+<h3>画像が WebP・AVIF に切り替わらない</h3>
+<p><strong>原因:</strong> 表示の設定がオフ、配信テストで止まっている、変換ファイルがまだ無い、切り替える範囲の外、ページキャッシュが古い、のどれかが考えられます。</p>
+<div class="step"><div class="step-number">1</div><div class="step-body"><p>「設定」タブの「変換した画像を表示する」がオンか確かめます。</p></div></div><div class="step"><div class="step-number">2</div><div class="step-body"><p>「診断」タブの配信テストが「問題あり」になっていないか確かめます（<a href="status.html">診断タブ</a>）。</p></div></div><div class="step"><div class="step-number">3</div><div class="step-body"><p>メディアライブラリの一覧で、その画像に AVIF・WEBP のバッジがあるか確かめます（<a href="media.html">メディアライブラリ</a>）。無ければ「今すぐ変換」を押します。</p></div></div><div class="step"><div class="step-number">4</div><div class="step-body"><p>ヘッダーのロゴなど、テーマが直接出す画像なら、「切り替える範囲」を「ページ全体」にします（<a href="delivery.html">サイトでの表示のしくみ</a>）。</p></div></div><div class="step"><div class="step-number">5</div><div class="step-body"><p>ページキャッシュを使っている場合は、キャッシュを消してから見直します。</p></div></div>
+<h3>表示が崩れる・画像の並びが変わった</h3>
+<p><strong>原因:</strong> テーマやスライダーなどの機能が、画像のまわりの要素を前提に動いていることがあります。</p>
+<div class="step"><div class="step-number">1</div><div class="step-body"><p>「表示崩れ防止の CSS を出力」がオンか確かめます。</p></div></div><div class="step"><div class="step-number">2</div><div class="step-body"><p>崩れる画像に CSS クラスがあれば、詳細設定の「除外する CSS クラス」に書きます。URL で指定するなら「除外する画像 URL」を使います。</p></div></div><div class="step"><div class="step-number">3</div><div class="step-body"><p>原因を切り分けるときは、「変換した画像を表示する」をいったんオフにします（元の画像の表示に戻ります）。</p></div></div>
+<h3>新しい画像が変換されない</h3>
+<p><strong>原因:</strong> 自動変換がオフ、または「あとで自動」を選んでいて WordPress の予約処理（WP-Cron）が動いていない可能性があります。</p>
+<div class="step"><div class="step-number">1</div><div class="step-body"><p>「アップロード時に自動で変換」がオンか確かめます。</p></div></div><div class="step"><div class="step-number">2</div><div class="step-body"><p>「診断」タブの「WP-Cron」が「無効」なら、「変換のタイミング」を「アップロード時（おすすめ）」にします。</p></div></div><div class="step"><div class="step-number">3</div><div class="step-body"><p>変換されなかった画像は、「一括変換」タブでまとめて変換できます。</p></div></div>
+<h3>一括変換が途中で止まった・進まない</h3>
+<p><strong>原因:</strong> サーバーの時間制限・メモリ不足、または管理画面を閉じていて予約処理が動いていない可能性があります。</p>
+<div class="step"><div class="step-number">1</div><div class="step-body"><p>「一括変換」タブを開くと、止まったところから進みます。止まっているときは「続きから再開」を押します。</p></div></div><div class="step"><div class="step-number">2</div><div class="step-body"><p>「サーバーの応答が不正です」と出る場合は、大きな画像でメモリが足りないことがあります。詳細設定の「変換する画像の最大サイズ」を小さくするか、サーバーのメモリの上限をサーバー会社に相談してください。</p></div></div><div class="step"><div class="step-number">3</div><div class="step-body"><p>失敗した画像は、あとで「以前に失敗した画像も試す」をオンにして一括変換すると、もう一度試せます。</p></div></div>
+<h3>「変換なし（軽くならないため）」が多い</h3>
+<p><strong>原因:</strong> すでに十分に圧縮された画像や、写真の PNG などは、変換しても軽くならないことがあります。軽くならない画像は元の画像のまま表示するのが正しい動きです。</p>
+<div class="callout callout-tip"><strong>どうしても作りたい場合</strong><p>「軽くならなければ保存しない」をオフにすると保存しますが、ページは重くなります。おすすめしません。</p></div>
+<h3>AVIF が作られない</h3>
+<p><strong>原因:</strong> サーバーが AVIF に対応していないか、「PNG・GIF は劣化なしで変換」がオンで、その画像が PNG・GIF です。</p>
+<div class="step"><div class="step-number">1</div><div class="step-body"><p>「診断」タブで AVIF が「○ 利用可」か確かめます。「× 利用不可」なら WebP だけで動きます。</p></div></div><div class="step"><div class="step-number">2</div><div class="step-body"><p>PNG・GIF の AVIF を作りたい場合は、「PNG・GIF は劣化なしで変換」をオフにします（PNG・GIF の文字や線が少しにじむことがあります）。</p></div></div>
+<h3>画面に「確認用の鍵が切れた」ような英語の短いエラーが出る</h3>
+<p><strong>原因:</strong> 画面を開いてから時間が経ち、操作の確認に使う情報の期限が切れました。または権限がありません。</p>
+<div class="step"><div class="step-number">1</div><div class="step-body"><p>画面を読み込み直してから、もう一度操作します。</p></div></div>
+<h3>削除したあと、画像が表示されない</h3>
+<p><strong>原因:</strong> ページキャッシュに、削除前のページが残っています。</p>
+<div class="step"><div class="step-number">1</div><div class="step-body"><p>ページキャッシュ系のプラグインやサーバーのキャッシュを消します。</p></div></div>
+</section>
+<section><h2>動作要件と制限</h2>
+<table><thead><tr><th style="width:35%;">項目</th><th>内容</th></tr></thead><tbody><tr><td>WordPress</td><td>5.9 以上</td></tr><tr><td>PHP</td><td>7.4 以上。GD または Imagick が必要</td></tr><tr><td>AVIF</td><td>PHP 8.1 以上で AVIF に対応した GD、または AVIF に対応した Imagick</td></tr><tr><td>対応する画像</td><td>JPEG・PNG・GIF・WebP（アニメーション画像は変換しません）</td></tr><tr><td>時間のかかる処理</td><td>一括変換は画像の数に応じて時間がかかります。1 回の処理はサーバーの時間制限の半分（5〜20 秒）で区切って進めます</td></tr><tr><td>表示が切り替わる範囲</td><td>このサイトのメディアライブラリの画像だけ。CSS の背景画像は対象外</td></tr><tr><td>ブラウザ</td><td>すべてのブラウザで表示できます（WebP・AVIF に対応していないブラウザには元の画像）</td></tr></tbody></table>
+</section>
+
+        <nav class="page-nav">
+            <a href="cli.html" class="prev">&laquo; コマンドでの操作</a>
+            <span></span>
+        </nav>
+        <footer class="manual-footer">
+            <p>作者: <a href="https://www.tsuyoshikashiwazaki.jp/profile/" target="_blank" rel="noopener">柏崎剛（Tsuyoshi Kashiwazaki）</a></p>
+            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.0</p>
+        </footer>
+    </main>
+    <div class="lightbox"></div>
+    <script src="js/manual.js"></script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>サイトでの表示のしくみ - Next-Gen Images マニュアル</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <button class="hamburger-btn" aria-label="メニューを開く">&#9776;</button>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2 style="color:#fff;">Next-Gen Images</h2>
+            <span class="version">v1.0.0</span>
+            <img src="images/main-visual.png" alt="" style="width:100%;border-radius:4px;margin-top:8px;">
+        </div>
+        <ul>
+            <li><a href="index.html">概要</a></li>
+            <li><a href="setup.html">インストール・初期設定</a></li>
+            <li><a href="settings.html">設定タブ</a></li>
+            <li><a href="bulk.html">一括変換タブ</a></li>
+            <li><a href="status.html">診断タブ</a></li>
+            <li><a href="media.html">メディアライブラリ</a></li>
+            <li><a href="delivery.html">サイトでの表示のしくみ</a></li>
+            <li><a href="cli.html">コマンドでの操作</a></li>
+            <li><a href="troubleshooting.html">トラブルシューティング</a></li>
+        </ul>
+    </nav>
+    <main class="content">
+        <h1>サイトでの表示のしくみ</h1>
+        <p class="lead">変換した画像が、サイトでどのように表示されるかを説明します。どの画像が切り替わり、どの画像が元のまま表示されるかがわかります。</p>
+
+<figure class="infographic"><img src="images/infographics/delivery-picture.png" alt="ブラウザごとに表示される画像" class="lightbox-trigger"><figcaption>AVIF に対応したブラウザには AVIF、WebP だけに対応したブラウザには WebP、どちらにも対応していないブラウザには元の画像を表示します</figcaption></figure>
+<section><h2>切り替えのしくみ</h2>
+<p>ページの画像を、ブラウザが形式を選べる書き方に置き換えます。ブラウザは AVIF → WebP → 元の画像の順に、自分が表示できる最初のものを選びます。元の画像の URL・代替テキスト・幅と高さはそのまま残し、画像のサイズ違い（レスポンシブ画像）も引き継ぎます。サーバーの設定ファイルを書き換える方法ではないため、サーバーの種類を問わず動きます。</p>
+<div class="callout callout-note"><strong>元の画像が WebP のとき</strong><p>元の画像が WebP のときは、AVIF だけを追加します。</p></div>
+</section>
+<section><h2>切り替わる画像の条件</h2>
+<p>次をすべて満たす画像が切り替わります。</p>
+<ul>
+<li>「設定」タブの「変換した画像を表示する」がオンで、表示できる形式（オンで、配信テストが「問題あり」でない形式）が 1 つ以上ある</li>
+<li>「切り替える範囲」の対象になっている（<a href="settings.html">設定タブ</a> の「切り替える範囲」）</li>
+<li>このサイトのメディアライブラリ（アップロードフォルダ）の JPEG・PNG・GIF・WebP の画像</li>
+<li>変換したファイルがあり、元の画像より新しく、空でない</li>
+<li>「除外する CSS クラス」「除外する画像 URL」に当たらない</li>
+</ul>
+</section>
+<section><h2>切り替わらない画像</h2>
+<table><thead><tr><th style="width:45%;">画像</th><th>理由</th></tr></thead><tbody><tr><td>CSS の背景画像</td><td>表示の切り替えの対象外です</td></tr><tr><td>別のサイトや CDN の URL の画像</td><td>このサイトのメディアライブラリの画像ではないため</td></tr><tr><td>遅延読み込み（あとから画像を読み込む機能）の印が付いた画像</td><td>遅延読み込みの機能と競合しないよう、触りません</td></tr><tr><td>すでに形式を選べる書き方になっている画像</td><td>二重に置き換えないため</td></tr><tr><td>インラインの SVG・動画・スクリプトなどの中の画像</td><td>表示が壊れないよう、触りません</td></tr><tr><td>記事本文などの範囲外の画像（「記事本文など」を選んでいるとき）</td><td>ヘッダーのロゴなど、テーマが直接出す画像。「ページ全体」にすると対象になります</td></tr><tr><td>元の画像を差し替えたあとの古い変換ファイル</td><td>古い変換ファイルは表示に使わず、元の画像を表示します</td></tr></tbody></table>
+<div class="callout callout-note"><strong>表示しない場面</strong><p>管理画面、フィード、AMP のページ、カスタマイザーのプレビューなど、通常のページ表示以外では切り替えません。</p></div>
+</section>
+<section><h2>ほかのプラグインとの共存</h2>
+<p>ほかの画像最適化・WebP 系のプラグインが有効なときは、このプラグインの画面の上部に「他の画像最適化・WebP 系プラグインが有効です：…」と表示されます。</p>
+<table><thead><tr><th style="width:40%;">場面</th><th>このプラグインの動き</th></tr></thead><tbody><tr><td>すでに形式を選べる書き方になっている画像</td><td>包み直しません</td></tr><tr><td>他のプラグインが作った WebP・AVIF</td><td>上書きも一括削除もしません。元の画像より新しければ、そのまま表示に使います</td></tr><tr><td>元の画像を削除したとき</td><td>このプラグインが作った変換ファイルだけを削除し、他のプラグインのファイルは残します</td></tr></tbody></table>
+<div class="callout callout-tip"><strong>おすすめ</strong><p>二重の処理は無駄なので、どちらか一方のプラグインの WebP 変換・表示の機能を止めることをおすすめします。なお、この表示はページキャッシュ系などのプラグインが有効なだけでも出ることがあります。</p></div>
+</section>
+<section><h2>元の画像を差し替えたとき・削除したとき</h2>
+<table><thead><tr><th style="width:35%;">操作</th><th>起きること</th></tr></thead><tbody><tr><td>元の画像を同じ名前で差し替えた</td><td>古い変換ファイルは表示に使いません。次の変換で作り直します（ファイルの大きさと更新時刻の両方を変えずに中身だけ変えた場合は見分けられないので、「一括変換」タブの「すべて作り直す」を使ってください）</td></tr><tr><td>メディアライブラリから画像を完全に削除した</td><td>このプラグインが作ったその画像の変換ファイルも削除します</td></tr><tr><td>プラグインを無効化した</td><td>変換ファイルは残り、サイトは元の画像で表示されます。予約していた変換は止まります</td></tr><tr><td>プラグインを削除した</td><td>設定と変換の記録を削除します。「プラグイン削除時に変換ファイルも削除」がオンのときだけ、このプラグインが作った WebP・AVIF も削除します</td></tr></tbody></table>
+</section>
+
+        <nav class="page-nav">
+            <a href="media.html" class="prev">&laquo; メディアライブラリ</a>
+            <a href="cli.html" class="next">コマンドでの操作 &raquo;</a>
+        </nav>
+        <footer class="manual-footer">
+            <p>作者: <a href="https://www.tsuyoshikashiwazaki.jp/profile/" target="_blank" rel="noopener">柏崎剛（Tsuyoshi Kashiwazaki）</a></p>
+            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.0</p>
+        </footer>
+    </main>
+    <div class="lightbox"></div>
+    <script src="js/manual.js"></script>
+</body>
+</html>

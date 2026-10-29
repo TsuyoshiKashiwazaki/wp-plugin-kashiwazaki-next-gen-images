@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>インストール・初期設定 - Next-Gen Images マニュアル</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <button class="hamburger-btn" aria-label="メニューを開く">&#9776;</button>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2 style="color:#fff;">Next-Gen Images</h2>
+            <span class="version">v1.0.0</span>
+            <img src="images/main-visual.png" alt="" style="width:100%;border-radius:4px;margin-top:8px;">
+        </div>
+        <ul>
+            <li><a href="index.html">概要</a></li>
+            <li><a href="setup.html">インストール・初期設定</a></li>
+            <li><a href="settings.html">設定タブ</a></li>
+            <li><a href="bulk.html">一括変換タブ</a></li>
+            <li><a href="status.html">診断タブ</a></li>
+            <li><a href="media.html">メディアライブラリ</a></li>
+            <li><a href="delivery.html">サイトでの表示のしくみ</a></li>
+            <li><a href="cli.html">コマンドでの操作</a></li>
+            <li><a href="troubleshooting.html">トラブルシューティング</a></li>
+        </ul>
+    </nav>
+    <main class="content">
+        <h1>インストール・初期設定</h1>
+        <p class="lead">プラグインのインストールから初期設定まで、ステップバイステップで解説します。</p>
+
+<section><h2>インストール方法</h2>
+<div class="step"><div class="step-number">1</div><div class="step-body"><h4>プラグインをアップロードする</h4><p>プラグインのフォルダを、サイトのプラグインのフォルダ（<code>/wp-content/plugins/</code>）にアップロードします。管理画面の「プラグイン」→「新規追加」→「プラグインのアップロード」から ZIP ファイルを選んでも構いません。</p></div></div><div class="step"><div class="step-number">2</div><div class="step-body"><h4>有効化する</h4><p>管理画面の「プラグイン」で「Kashiwazaki Next-Gen Images」の「有効化」を押します。プラグインの一覧の「設定」リンクからも画面を開けます。</p></div></div><div class="step"><div class="step-number">3</div><div class="step-body"><h4>メニューを開く</h4><p>管理画面の左メニューに「Kashiwazaki Next-Gen Images」が追加されます。</p><figure class="screenshot"><img src="images/screenshots/00-menu-location.png" alt="管理画面の左メニューに追加された Kashiwazaki Next-Gen Images（赤い枠）" class="lightbox-trigger"><figcaption>左メニューの「Kashiwazaki Next-Gen Images」（赤い枠）</figcaption></figure></div></div>
+<div class="callout callout-tip"><strong>メニューの場所</strong><p>左メニューの画像のアイコンが目印です。メニューは管理者にだけ表示されます。</p></div>
+</section>
+<section><h2>最初にすること</h2>
+<figure class="infographic"><img src="images/infographics/setup-flow.png" alt="有効化から表示までの 5 つの手順" class="lightbox-trigger"><figcaption>有効化 → 設定を確認 → 一括変換 → 診断で確認 → サイトで表示</figcaption></figure>
+<div class="step"><div class="step-number">1</div><div class="step-body"><h4>診断タブでサーバーの対応状況を見る</h4><p>「診断」タブの「変換エンジン」で、WebP と AVIF が「○ 利用可」になっているかを確かめます。「配信テスト」が「正常（配信できます）」かも見ます。詳しくは <a href="status.html">診断タブ</a> を参照してください。</p></div></div><div class="step"><div class="step-number">2</div><div class="step-body"><h4>設定タブを確認する</h4><p>初期設定のままで使えるようにしてあります。変えるとすれば、画質（WebP は 82、AVIF は 60）くらいです。<a href="settings.html">設定タブ</a> にすべての項目の説明があります。</p></div></div><div class="step"><div class="step-number">3</div><div class="step-body"><h4>既存の画像を一括で変換する</h4><p>新しい画像はアップロードのときに自動で変換されます。すでにある画像は「一括変換」タブの「一括変換を開始」で変換します。詳しくは <a href="bulk.html">一括変換タブ</a> を参照してください。</p></div></div><div class="step"><div class="step-number">4</div><div class="step-body"><h4>サイトで確かめる</h4><p>サイトのページを開き、画像が普段どおり表示されることを確かめます。ブラウザの開発者ツールのネットワークの表示で、画像の形式が webp や avif になっていれば、軽い画像が使われています。</p></div></div>
+<div class="callout callout-note"><strong>元の画像について</strong><p>このプラグインは元の画像を削除も変更もしません。変換したファイルは、元のファイル名の後ろに「.webp」「.avif」を付けた名前で、元の画像と同じフォルダに保存します（例: photo.jpg の隣に photo.jpg.webp）。</p></div>
+<div class="callout callout-warning"><strong>ページキャッシュを使っている場合</strong><p>ページキャッシュ系のプラグインやサーバーのキャッシュを使っている場合は、変換したあとにキャッシュを消してください。古いページのままだと、元の画像のまま表示されます。</p></div>
+</section>
+
+        <nav class="page-nav">
+            <a href="index.html" class="prev">&laquo; 概要</a>
+            <a href="settings.html" class="next">設定タブ &raquo;</a>
+        </nav>
+        <footer class="manual-footer">
+            <p>作者: <a href="https://www.tsuyoshikashiwazaki.jp/profile/" target="_blank" rel="noopener">柏崎剛（Tsuyoshi Kashiwazaki）</a></p>
+            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.0</p>
+        </footer>
+    </main>
+    <div class="lightbox"></div>
+    <script src="js/manual.js"></script>
+</body>
+</html>

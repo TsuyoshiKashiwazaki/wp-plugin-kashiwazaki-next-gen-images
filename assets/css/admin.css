@@ -1,0 +1,171 @@
+/* Kashiwazaki Next-Gen Images 管理画面 */
+.kashiwazaki-next-gen-images-wrap {
+	--kashiwazaki-next-gen-images-accent: var(--wp-admin-theme-color, #2271b1);
+	--kashiwazaki-next-gen-images-accent-dark: var(--wp-admin-theme-color-darker-10, #135e96);
+	--kashiwazaki-next-gen-images-border: #dcdcde;
+	--kashiwazaki-next-gen-images-muted: #646970;
+	--kashiwazaki-next-gen-images-bg: #fff;
+	max-width: 1180px;
+}
+
+/* WordPress の .button などの表示指定が hidden 属性に勝って、隠したいものが見えてしまうのを防ぐ。 */
+.kashiwazaki-next-gen-images-wrap [hidden] { display: none !important; }
+
+/* ---- ページ上部 ---- */
+.kashiwazaki-next-gen-images-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 14px 0 6px; }
+.kashiwazaki-next-gen-images-header h1 { margin: 0; padding: 0; font-size: 23px; }
+.kashiwazaki-next-gen-images-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px; background: #e7f0f8; color: var(--kashiwazaki-next-gen-images-accent-dark); font-size: 12px; font-weight: 600; }
+.kashiwazaki-next-gen-images-pill-safe { background: #e6f4ea; color: #1e6b32; }
+.kashiwazaki-next-gen-images-pill .dashicons { width: 16px; height: 16px; font-size: 16px; }
+.kashiwazaki-next-gen-images-wrap .nav-tab-wrapper { margin-bottom: 18px; }
+
+/* ---- カード（区画）---- */
+.kashiwazaki-next-gen-images-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 18px; align-items: stretch; }
+.kashiwazaki-next-gen-images-card,
+.kashiwazaki-next-gen-images-box {
+	background: var(--kashiwazaki-next-gen-images-bg);
+	border: 1px solid var(--kashiwazaki-next-gen-images-border);
+	border-radius: 10px;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
+	margin: 0;
+	max-width: none;
+	padding: 0;
+}
+.kashiwazaki-next-gen-images-box { margin: 0 0 18px; padding: 0 22px 18px; }
+.kashiwazaki-next-gen-images-box > h2 { margin: 0 -22px 14px; padding: 14px 22px; border-bottom: 1px solid var(--kashiwazaki-next-gen-images-border); font-size: 15px; }
+.kashiwazaki-next-gen-images-card-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--kashiwazaki-next-gen-images-border); background: #f6f7f7; border-radius: 10px 10px 0 0; }
+.kashiwazaki-next-gen-images-card-head .dashicons,
+.kashiwazaki-next-gen-images-advanced summary .dashicons { flex: none; width: 36px; height: 36px; font-size: 20px; line-height: 36px; text-align: center; border-radius: 8px; background: #e7f0f8; color: var(--kashiwazaki-next-gen-images-accent); }
+.kashiwazaki-next-gen-images-card-title { margin: 0; padding: 0; font-size: 15px; font-weight: 600; line-height: 1.3; }
+.kashiwazaki-next-gen-images-card-sub { margin: 2px 0 0; color: var(--kashiwazaki-next-gen-images-muted); font-size: 12px; }
+.kashiwazaki-next-gen-images-card-body { padding: 6px 18px 12px; }
+.kashiwazaki-next-gen-images-card-wide { margin-top: 18px; }
+
+/* ---- 1 項目の行 ---- */
+.kashiwazaki-next-gen-images-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; padding: 12px 0; border-bottom: 1px solid #f0f0f1; }
+.kashiwazaki-next-gen-images-row:last-child { border-bottom: 0; }
+.kashiwazaki-next-gen-images-row-label { display: flex; align-items: center; gap: 6px; flex: 1 1 180px; font-weight: 500; }
+.kashiwazaki-next-gen-images-row-label label { font-weight: 600; }
+.kashiwazaki-next-gen-images-row-control { display: flex; align-items: center; gap: 10px; flex: 0 1 auto; justify-content: flex-end; }
+.kashiwazaki-next-gen-images-row-control select,
+.kashiwazaki-next-gen-images-row-control textarea { min-width: 260px; }
+.kashiwazaki-next-gen-images-row:has(textarea) { align-items: flex-start; }
+.kashiwazaki-next-gen-images-row:has(textarea) .kashiwazaki-next-gen-images-row-control { flex: 1 1 320px; }
+.kashiwazaki-next-gen-images-row:has(.kashiwazaki-next-gen-images-range) .kashiwazaki-next-gen-images-row-control { flex: 1 1 260px; flex-wrap: wrap; justify-content: stretch; }
+.kashiwazaki-next-gen-images-row:has(.kashiwazaki-next-gen-images-chips) .kashiwazaki-next-gen-images-row-control { flex: 1 1 320px; justify-content: flex-start; }
+.kashiwazaki-next-gen-images-hint { margin: 8px 0 2px; color: var(--kashiwazaki-next-gen-images-muted); font-size: 12px; }
+
+/* ---- バッジ ---- */
+.kashiwazaki-next-gen-images-badge { display: inline-block; padding: 1px 9px; border-radius: 999px; background: #dcdcde; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.kashiwazaki-next-gen-images-badge-ok { background: #d6f0dc; color: #005c12; }
+.kashiwazaki-next-gen-images-badge-ng { background: #facfd2; color: #8a1f20; }
+
+/* ---- スイッチ ---- */
+.kashiwazaki-next-gen-images-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex: none; }
+.kashiwazaki-next-gen-images-switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+.kashiwazaki-next-gen-images-switch-track { position: absolute; inset: 0; border-radius: 999px; background: #a7aaad; transition: background .15s; }
+.kashiwazaki-next-gen-images-switch-track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .3); transition: transform .15s; }
+.kashiwazaki-next-gen-images-switch input:checked + .kashiwazaki-next-gen-images-switch-track { background: var(--kashiwazaki-next-gen-images-accent); }
+.kashiwazaki-next-gen-images-switch input:checked + .kashiwazaki-next-gen-images-switch-track::after { transform: translateX(20px); }
+.kashiwazaki-next-gen-images-switch input:focus-visible + .kashiwazaki-next-gen-images-switch-track { outline: 2px solid var(--kashiwazaki-next-gen-images-accent); outline-offset: 2px; }
+
+/* ---- スライダー ---- */
+.kashiwazaki-next-gen-images-range { display: flex; align-items: center; gap: 12px; width: 100%; }
+.kashiwazaki-next-gen-images-range input[type="range"] { flex: 1; min-width: 120px; height: 6px; margin: 0; padding: 0; accent-color: var(--kashiwazaki-next-gen-images-accent); cursor: pointer; }
+.kashiwazaki-next-gen-images-range output { flex: none; min-width: 64px; padding: 2px 8px; border-radius: 6px; background: #f0f6fc; color: var(--kashiwazaki-next-gen-images-accent-dark); font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+.kashiwazaki-next-gen-images-range-scale { display: flex; justify-content: space-between; width: 100%; padding-right: 76px; color: var(--kashiwazaki-next-gen-images-muted); font-size: 11px; }
+
+/* ---- ボタン風の選択 ---- */
+.kashiwazaki-next-gen-images-segmented { display: inline-flex; border: 1px solid #8c8f94; border-radius: 8px; overflow: hidden; background: #fff; }
+.kashiwazaki-next-gen-images-segmented label { position: relative; margin: 0; }
+.kashiwazaki-next-gen-images-segmented label + label { border-left: 1px solid #8c8f94; }
+.kashiwazaki-next-gen-images-segmented input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.kashiwazaki-next-gen-images-segmented span { display: block; padding: 6px 14px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.kashiwazaki-next-gen-images-segmented input:checked + span { background: var(--kashiwazaki-next-gen-images-accent); color: #fff; font-weight: 600; }
+.kashiwazaki-next-gen-images-segmented input:focus-visible + span { outline: 2px solid var(--kashiwazaki-next-gen-images-accent); outline-offset: -2px; }
+
+/* ---- チップ（サイズの選択）---- */
+.kashiwazaki-next-gen-images-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.kashiwazaki-next-gen-images-chip { position: relative; margin: 0; }
+.kashiwazaki-next-gen-images-chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.kashiwazaki-next-gen-images-chip span { display: block; padding: 3px 11px; border: 1px solid #c3c4c7; border-radius: 999px; background: #fff; font-size: 12px; cursor: pointer; }
+.kashiwazaki-next-gen-images-chip input:checked + span { border-color: #b32d2e; background: #fcf0f1; color: #8a1f20; text-decoration: line-through; }
+.kashiwazaki-next-gen-images-chip input:focus-visible + span { outline: 2px solid var(--kashiwazaki-next-gen-images-accent); }
+
+/* ---- ツールチップ（？）---- */
+.kashiwazaki-next-gen-images-tip { position: relative; display: inline-flex; }
+.kashiwazaki-next-gen-images-tip-button { width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; background: #dcdcde; color: #3c434a; font-size: 11px; font-weight: 700; line-height: 18px; cursor: help; }
+.kashiwazaki-next-gen-images-tip-button:hover,
+.kashiwazaki-next-gen-images-tip-button:focus-visible { background: var(--kashiwazaki-next-gen-images-accent); color: #fff; outline: 0; }
+.kashiwazaki-next-gen-images-tip-text {
+	/* 「？」の位置から右へ広げる。中央寄せだと、左の列で管理メニューの下に隠れて切れるため。 */
+	position: absolute; z-index: 30; left: -6px; bottom: calc(100% + 8px); width: max-content; max-width: 300px;
+	padding: 9px 12px; border-radius: 8px; background: #1d2327; color: #fff; font-size: 12px; font-weight: 400; line-height: 1.6;
+	box-shadow: 0 4px 14px rgba(0, 0, 0, .25); display: none;
+}
+.kashiwazaki-next-gen-images-tip-text::after { content: ""; position: absolute; top: 100%; left: 12px; border: 6px solid transparent; border-top-color: #1d2327; }
+/* 非表示のときは display:none にして、場所を取らない（スマホで横スクロールを出さないため）。 */
+.kashiwazaki-next-gen-images-tip:hover .kashiwazaki-next-gen-images-tip-text,
+.kashiwazaki-next-gen-images-tip:focus-within .kashiwazaki-next-gen-images-tip-text,
+.kashiwazaki-next-gen-images-tip.is-open .kashiwazaki-next-gen-images-tip-text { display: block; }
+.kashiwazaki-next-gen-images-tip.is-dismissed .kashiwazaki-next-gen-images-tip-text { display: none; }
+
+/* ---- 詳細設定（折りたたみ）---- */
+.kashiwazaki-next-gen-images-advanced > summary { display: flex; align-items: center; gap: 12px; padding: 14px 18px; list-style: none; cursor: pointer; border-radius: 10px; }
+.kashiwazaki-next-gen-images-advanced > summary::-webkit-details-marker { display: none; }
+.kashiwazaki-next-gen-images-advanced > summary::after { content: "\f347"; margin-left: auto; font-family: dashicons; color: var(--kashiwazaki-next-gen-images-muted); }
+.kashiwazaki-next-gen-images-advanced[open] > summary { border-bottom: 1px solid var(--kashiwazaki-next-gen-images-border); border-radius: 10px 10px 0 0; background: #f6f7f7; }
+.kashiwazaki-next-gen-images-advanced[open] > summary::after { content: "\f343"; }
+.kashiwazaki-next-gen-images-advanced .kashiwazaki-next-gen-images-card-sub { margin: 0 0 0 4px; }
+.kashiwazaki-next-gen-images-advanced > summary .kashiwazaki-next-gen-images-card-title { font-size: 15px; }
+
+/* ---- 保存バー ---- */
+.kashiwazaki-next-gen-images-savebar { position: sticky; bottom: 0; z-index: 20; display: flex; align-items: center; gap: 14px; margin: 18px -10px 0; padding: 12px 10px; background: rgba(240, 240, 241, .94); border-top: 1px solid var(--kashiwazaki-next-gen-images-border); backdrop-filter: blur(4px); }
+.kashiwazaki-next-gen-images-savebar-note { color: var(--kashiwazaki-next-gen-images-muted); font-size: 12px; }
+
+/* ---- 一括変換・進捗 ---- */
+.kashiwazaki-next-gen-images-progress { background: #dcdcde; height: 14px; border-radius: 7px; overflow: hidden; max-width: 640px; margin: 12px 0 6px; }
+.kashiwazaki-next-gen-images-progress-bar { background: var(--kashiwazaki-next-gen-images-accent); height: 100%; width: 0; transition: width .25s; }
+.kashiwazaki-next-gen-images-progress-bar.is-done { background: #1e8a3a; }
+/* 実行中は、しま模様が流れる（止まっているように見えないように）。 */
+.kashiwazaki-next-gen-images-progress-bar.is-running {
+	background-image: linear-gradient(135deg, rgba(255, 255, 255, .28) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .28) 50%, rgba(255, 255, 255, .28) 75%, transparent 75%, transparent);
+	background-size: 24px 24px; animation: kashiwazaki-next-gen-images-stripes .8s linear infinite;
+}
+@keyframes kashiwazaki-next-gen-images-stripes { from { background-position: 0 0; } to { background-position: 24px 0; } }
+.kashiwazaki-next-gen-images-status.is-running::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 8px; border-radius: 50%; background: var(--kashiwazaki-next-gen-images-accent); animation: kashiwazaki-next-gen-images-pulse 1s ease-in-out infinite; }
+@keyframes kashiwazaki-next-gen-images-pulse { 0%, 100% { opacity: .25; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.1); } }
+.kashiwazaki-next-gen-images-meta { margin: 2px 0 6px; color: var(--kashiwazaki-next-gen-images-muted); font-size: 12px; min-height: 1.4em; }
+@media (prefers-reduced-motion: reduce) {
+	.kashiwazaki-next-gen-images-progress-bar.is-running, .kashiwazaki-next-gen-images-status.is-running::before { animation: none; }
+}
+.kashiwazaki-next-gen-images-status { margin: 4px 0; font-weight: 600; }
+.kashiwazaki-next-gen-images-log { max-height: 240px; overflow: auto; background: #f6f7f7; border: 1px solid #dcdcde; border-radius: 6px; padding: 8px 12px; margin: 8px 0; max-width: 900px; font-size: 12px; }
+.kashiwazaki-next-gen-images-log:empty { display: none; }
+.kashiwazaki-next-gen-images-log li { margin: 2px 0; }
+.kashiwazaki-next-gen-images-log .is-error { color: #b32d2e; }
+.kashiwazaki-next-gen-images-stats { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 14px; }
+.kashiwazaki-next-gen-images-stat { min-width: 120px; padding: 8px 14px; border: 1px solid var(--kashiwazaki-next-gen-images-border); border-radius: 8px; background: #f6f7f7; }
+.kashiwazaki-next-gen-images-stat strong { display: block; font-size: 20px; line-height: 1.2; }
+.kashiwazaki-next-gen-images-stat span { color: var(--kashiwazaki-next-gen-images-muted); font-size: 12px; }
+
+/* ---- 全画面共通の進捗表示（管理画面の上部）---- */
+.kashiwazaki-next-gen-images-job-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.kashiwazaki-next-gen-images-job-notice .kashiwazaki-next-gen-images-progress { flex: 1 1 220px; max-width: 420px; height: 10px; margin: 0; }
+.kashiwazaki-next-gen-images-job-notice p { margin: 0; }
+
+/* ---- 診断などの共通 ---- */
+.kashiwazaki-next-gen-images-ok { color: #007017; font-weight: 600; }
+.kashiwazaki-next-gen-images-ng { color: #b32d2e; }
+.kashiwazaki-next-gen-images-code { background: #f6f7f7; border: 1px solid #dcdcde; padding: 8px 12px; overflow: auto; }
+.kashiwazaki-next-gen-images-inline { display: inline-block; margin: 0 14px 6px 0; }
+.column-kashiwazaki_next_gen_images { width: 170px; }
+
+@media (max-width: 782px) {
+	.kashiwazaki-next-gen-images-grid { grid-template-columns: 1fr; }
+	.kashiwazaki-next-gen-images-row-control { justify-content: flex-start; flex: 1 1 100%; }
+	.kashiwazaki-next-gen-images-row-control select,
+	.kashiwazaki-next-gen-images-row-control textarea { min-width: 0; width: 100%; }
+	.kashiwazaki-next-gen-images-tip-text { max-width: 240px; }
+	.kashiwazaki-next-gen-images-range-scale { padding-right: 0; }
+}

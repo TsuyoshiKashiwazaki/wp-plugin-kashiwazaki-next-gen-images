@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>設定タブ - Next-Gen Images マニュアル</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <button class="hamburger-btn" aria-label="メニューを開く">&#9776;</button>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2 style="color:#fff;">Next-Gen Images</h2>
+            <span class="version">v1.0.0</span>
+            <img src="images/main-visual.png" alt="" style="width:100%;border-radius:4px;margin-top:8px;">
+        </div>
+        <ul>
+            <li><a href="index.html">概要</a></li>
+            <li><a href="setup.html">インストール・初期設定</a></li>
+            <li><a href="settings.html">設定タブ</a></li>
+            <li><a href="bulk.html">一括変換タブ</a></li>
+            <li><a href="status.html">診断タブ</a></li>
+            <li><a href="media.html">メディアライブラリ</a></li>
+            <li><a href="delivery.html">サイトでの表示のしくみ</a></li>
+            <li><a href="cli.html">コマンドでの操作</a></li>
+            <li><a href="troubleshooting.html">トラブルシューティング</a></li>
+        </ul>
+    </nav>
+    <main class="content">
+        <h1>設定タブ</h1>
+        <p class="lead">変換する形式・画質・アップロードしたときの動き・サイトでの表示の仕方を決める画面です。初期設定のままで使えるようにしてあります。</p>
+
+<figure class="screenshot"><img src="images/screenshots/01-settings-full.png" alt="設定タブの全体" class="lightbox-trigger"><figcaption>設定タブ。4 枚のカードと「詳細設定」、下に「変更を保存」があります</figcaption></figure>
+<section><h2>画面の構成</h2>
+<figure class="infographic"><img src="images/infographics/settings-map.png" alt="設定タブの 5 つの区画" class="lightbox-trigger"><figcaption>設定タブは 4 枚のカードと「詳細設定」でできています</figcaption></figure>
+<table><thead><tr><th style="width:35%;">区画</th><th>ここで決めること</th></tr></thead><tbody><tr><td>変換する形式</td><td>WebP・AVIF のどちらを作り、表示するか</td></tr><tr><td>画質と軽さ</td><td>画質の数値、PNG・GIF の扱い、軽くならないときの扱い</td></tr><tr><td>新しい画像の自動変換</td><td>アップロードしたときに変換するか、いつ変換するか</td></tr><tr><td>サイトでの表示</td><td>変換した画像を表示するか、どこまで切り替えるか</td></tr><tr><td>詳細設定</td><td>通常は変更不要な項目（変換エンジン、最大サイズ、除外の指定など）</td></tr></tbody></table>
+<p>画面の上には、プラグインの名前・版と「元の画像は削除も変更もされません」の表示があり、その下に「設定」「一括変換」「診断」の 3 つのタブがあります。</p><p>各項目の右の「？」にマウスを重ねる（スマートフォンではタップする）と、その項目の説明が表示されます。Esc キーで閉じます。</p></section>
+
+<section><h2>変換する形式</h2><p>どの形式の画像を作るかを決めます。</p>
+<h3>WebP</h3><p>多くのブラウザで使える、軽い画像形式を作ります。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>オン</td></tr><tr><td style="width:30%;">オンのとき</td><td>WebP を作り、サイトで表示します</td></tr><tr><td style="width:30%;">オフのとき</td><td>WebP を新しく作りません。<strong>すでに作った WebP も表示に使わなくなります</strong>（ファイルは残ります）</td></tr><tr><td style="width:30%;">右のバッジ</td><td>「作成できます」= このサーバーで作れます／「このサーバーでは作れません」= サーバーの PHP が対応していません</td></tr></tbody></table>
+<h3>AVIF</h3><p>WebP よりさらに軽くなる形式を作ります。変換に少し時間がかかります。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>オン</td></tr><tr><td style="width:30%;">オンのとき</td><td>AVIF を作り、サイトで表示します</td></tr><tr><td style="width:30%;">オフのとき</td><td>AVIF を新しく作らず、すでにある AVIF も表示に使いません（ファイルは残ります）</td></tr><tr><td style="width:30%;">作れないサーバー</td><td>オンのまま保存できますが、変換は行われません。WebP だけで動きます</td></tr></tbody></table>
+<p>「？」の説明には、そのサーバーで画像を作る道具（GD・Imagick）のどれを使うかも表示されます。</p>
+<div class="callout callout-note"><strong>表示の順番</strong><p>表示は AVIF → WebP → 元の画像の順に、ブラウザが使えるものを選びます。</p></div>
+</section>
+
+<section><h2>画質と軽さ</h2><p>数字が大きいほどきれいで、ファイルも大きくなります。</p>
+<h3>WebP の画質</h3><p>WebP の画質を 1〜100 で決めます。80 前後が目安です。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>82</td></tr><tr><td style="width:30%;">入力できる範囲</td><td>1〜100（スライダーで「軽い」〜「きれい」）</td></tr></tbody></table>
+<h3>AVIF の画質</h3><p>AVIF の画質を 1〜100 で決めます。AVIF は低めの数字でもきれいです。60 前後が目安です。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>60</td></tr><tr><td style="width:30%;">入力できる範囲</td><td>1〜100</td></tr></tbody></table>
+<div class="callout callout-warning"><strong>画質を変えたあと</strong><p>画質を変えても、すでに作った画像は作り直されません。作り直すには「一括変換」タブで「すべて作り直す」をオンにして一括変換を開始してください。</p></div>
+<h3>PNG・GIF は劣化なしで変換</h3><p>PNG・GIF を、見た目が変わらない「劣化なし」の WebP に変換します。ロゴ・図・スクリーンショットの文字や線が崩れません。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>オン</td></tr><tr><td style="width:30%;">オンのとき</td><td>PNG・GIF は劣化なしの WebP だけを作ります。AVIF は劣化なしで作れないため、PNG・GIF の AVIF は作らず、すでにある AVIF も表示に使いません</td></tr><tr><td style="width:30%;">オフのとき</td><td>PNG・GIF も、上の画質の設定で WebP・AVIF を作ります</td></tr><tr><td style="width:30%;">注意</td><td>写真の PNG では、あまり軽くならないことがあります。サーバーによっては劣化なしの WebP を作れず、「変換なし」になります</td></tr></tbody></table>
+<h3>軽くならなければ保存しない</h3><p>変換したファイルが元の画像より大きい・同じ大きさなら、捨てて元の画像のまま表示します。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>オン</td></tr><tr><td style="width:30%;">オンのとき</td><td>軽くならない画像は「変換なし（軽くならないため）」になります</td></tr><tr><td style="width:30%;">オフのとき</td><td>大きくなっても保存し、表示に使います</td></tr></tbody></table>
+<div class="callout callout-tip"><strong>おすすめ</strong><p>画質は初期値のまま、2 つのスイッチはオンのままがおすすめです。</p></div>
+</section>
+
+<section><h2>新しい画像の自動変換</h2><p>画像をアップロードしたときの動きを決めます。</p>
+<h3>アップロード時に自動で変換</h3><p>新しい画像をアップロードしたとき、サムネイルを作り直したとき、画像を編集したときに、自動で変換します。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>オン</td></tr><tr><td style="width:30%;">オフのとき</td><td>自動では変換しません。「一括変換」タブからいつでも変換できます</td></tr></tbody></table>
+<h3>変換のタイミング</h3><p>いつ変換するかを選びます。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>アップロード時（おすすめ）</td></tr></tbody></table>
+<table><thead><tr><th style="width:35%;">選択肢</th><th>動き</th></tr></thead><tbody><tr><td>アップロード時（おすすめ）</td><td>アップロードの処理の中で変換します。サーバーの時間制限を超えないよう時間を区切って変換し、終わらなかった分は少しあとで自動で続けます</td></tr><tr><td>あとで自動</td><td>アップロードの数秒後に、WordPress の予約処理（WP-Cron）が変換します。アップロードは速くなりますが、WP-Cron が動いている必要があります</td></tr></tbody></table>
+<div class="callout callout-note"><strong>画像を編集したとき</strong><p>画像の編集やサムネイルの作り直しでは、選んだタイミングに関係なく、少しあとに自動で変換します。変換に失敗しても、アップロードそのものは成功します。</p></div>
+</section>
+
+<section><h2>サイトでの表示</h2><p>変換した画像をサイトでどう表示するかを決めます。</p>
+<h3>変換した画像を表示する</h3><p>ページの画像を、変換した WebP・AVIF に切り替えて表示します。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>オン</td></tr><tr><td style="width:30%;">オフのとき</td><td>変換したファイルがあっても、元の画像のまま表示します。変換は続きます。表示の問題の切り分けに使えます</td></tr></tbody></table>
+<h3>切り替える範囲</h3><p>どこの画像を切り替えるかを選びます。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>記事本文など（おすすめ）</td></tr></tbody></table>
+<table><thead><tr><th style="width:35%;">選択肢</th><th>切り替わる画像</th></tr></thead><tbody><tr><td>記事本文など（おすすめ）</td><td>記事の本文、アイキャッチ、ウィジェット、画像ブロックの画像。安全な範囲です</td></tr><tr><td>ページ全体</td><td>ページに出てくるすべての画像。テーマが直接出す画像（ヘッダーのロゴなど）も対象ですが、他のプラグインの出力と干渉することがあります</td></tr></tbody></table>
+<div class="callout callout-note"><strong>対象外の画像</strong><p>CSS の背景画像（background-image）は、どちらを選んでも対象外です。詳しくは <a href="delivery.html">サイトでの表示のしくみ</a> を参照してください。</p></div>
+<h3>表示崩れ防止の CSS を出力</h3><p>画像のレイアウトが変わらないよう、1 行の CSS をページに出力します。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>オン</td></tr><tr><td style="width:30%;">オフのとき</td><td>CSS を出しません。テーマによっては画像の並びや角の丸みが変わることがあります</td></tr><tr><td style="width:30%;">おすすめ</td><td>通常はオンのままにしてください</td></tr></tbody></table>
+<h3>他のプラグインが画像を包み直しても対応</h3><p>ライトボックスなどが画像を別の要素で包むと、WebP・AVIF が使われず元の画像のままになります。それを自動で直す小さなスクリプトをページに出力します。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>オン</td></tr><tr><td style="width:30%;">オフのとき</td><td>包み直しの修正をしません（他の機能が画像を差し替えたときに元の画像に戻す働きは、オフでも続きます）</td></tr></tbody></table>
+</section>
+
+<section><h2>詳細設定</h2><p>「詳細設定」を押すと開きます。通常は変更不要です。</p>
+<figure class="screenshot"><img src="images/screenshots/02-settings-advanced.png" alt="詳細設定を開いた設定タブ" class="lightbox-trigger"><figcaption>「詳細設定」を開いたところ</figcaption></figure>
+<h3>変換エンジン</h3><p>画像を作る道具を選びます。指定した道具で失敗したときは、使える別の道具で自動的にやり直します。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>自動（おすすめ）</td></tr></tbody></table>
+<table><thead><tr><th style="width:35%;">選択肢</th><th>動き</th></tr></thead><tbody><tr><td>自動（おすすめ）</td><td>使える道具を、Imagick → GD の順に使います</td></tr><tr><td>GD</td><td>GD を先に使い、失敗したら Imagick で作り直します</td></tr><tr><td>Imagick</td><td>Imagick を先に使い、失敗したら GD で作り直します</td></tr></tbody></table>
+<p>指定した道具がその形式を作れないときは、「自動」と同じ動きになります。</p>
+<h3>変換する画像の最大サイズ</h3><p>これより大きな画像は、サーバーのメモリ不足を避けるため変換しません。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>30 百万画素</td></tr><tr><td style="width:30%;">入力できる範囲</td><td>1〜200 百万画素</td></tr><tr><td style="width:30%;">超えた画像</td><td>「変換なし（画素数が上限超過）」になり、元の画像のまま表示します</td></tr><tr><td style="width:30%;">目安</td><td>共用レンタルサーバーでは 30 前後が安全です</td></tr></tbody></table>
+<h3>変換しない画像サイズ</h3><p>チェックしたサイズ（フルサイズ、thumbnail、medium など）は変換しません。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>どれもチェックなし</td></tr><tr><td style="width:30%;">注意</td><td>チェックしても、すでに作ったそのサイズの変換ファイルは消えず、表示にも使われ続けます。通常は何もチェックしなくて構いません</td></tr></tbody></table>
+<h3>除外する CSS クラス</h3><p>このクラスが付いた画像は、元のまま表示します。1 行に 1 つ書きます。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>no-nextgen と skip-lazy</td></tr><tr><td style="width:30%;">書ける文字</td><td>英数字・「_」・「-」。最大 100 行。大文字と小文字は区別しません</td></tr><tr><td style="width:30%;">使う場面</td><td>スライダーなど、画像のまわりの要素を JavaScript で探す機能に不具合が出たとき</td></tr></tbody></table>
+<h3>除外する画像 URL</h3><p>画像の URL にこの文字列が含まれていたら、元のまま表示します。1 行に 1 つ書きます（例: /logo/）。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>空</td></tr><tr><td style="width:30%;">注意</td><td>表示を切り替えないだけで、変換は行います。最大 100 行</td></tr></tbody></table>
+<h3>プラグイン削除時に変換ファイルも削除</h3><p>プラグインを「削除」するときに、このプラグインが作った WebP・AVIF も一緒に削除するかを決めます。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>オフ</td></tr><tr><td style="width:30%;">オンのとき</td><td>削除のときに、このプラグインが作った WebP・AVIF を削除します</td></tr><tr><td style="width:30%;">オフのとき</td><td>変換したファイルは残ります</td></tr><tr><td style="width:30%;">注意</td><td>どちらでも元の画像は削除されません。「無効化」では何も削除されません。設定と変換の記録は、削除のときにどちらでも消えます</td></tr></tbody></table>
+</section>
+
+<section><h2>保存</h2>
+<p>画面の下の「変更を保存」を押すと、すべての項目を保存します。「詳細設定」を閉じたままでも、中の値は一緒に保存されます。保存すると、画面の上に「設定を保存しました。」と表示されます。</p>
+<figure class="screenshot"><img src="images/screenshots/03-settings-saved.png" alt="保存後に表示される「設定を保存しました。」" class="lightbox-trigger"><figcaption>保存したあとの表示</figcaption></figure></section>
+
+<section><h2>この画面に出るメッセージ</h2>
+<table><thead><tr><th style="width:45%;">メッセージ</th><th>意味と対処</th></tr></thead><tbody><tr><td>このサーバーでは WebP・AVIF を作れません（PHP の GD か Imagick が必要です）。…</td><td>サーバーに画像を作る道具がありません。変換は行われず、サイトの表示には影響しません。サーバー会社に GD か Imagick を使えるか問い合わせてください</td></tr><tr><td>WEBP（または AVIF）の配信テストに失敗したため、安全のためこの形式の表示を止めています。…</td><td>サーバーがその形式の画像を正しく送れていないため、その形式の表示を止めています。「診断」タブの配信テストを確認してください（<a href="status.html">診断タブ</a>）</td></tr><tr><td>設定を保存しました。</td><td>保存が完了しました</td></tr></tbody></table>
+<div class="callout callout-note"><strong>設定タブを初めて開いたとき</strong><p>配信テストを一度も行っていなければ、設定タブを開いたときに自動で 1 回だけ行います。そのため、開くのに数秒かかることがあります。</p></div>
+</section>
+
+        <nav class="page-nav">
+            <a href="setup.html" class="prev">&laquo; インストール・初期設定</a>
+            <a href="bulk.html" class="next">一括変換タブ &raquo;</a>
+        </nav>
+        <footer class="manual-footer">
+            <p>作者: <a href="https://www.tsuyoshikashiwazaki.jp/profile/" target="_blank" rel="noopener">柏崎剛（Tsuyoshi Kashiwazaki）</a></p>
+            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.0</p>
+        </footer>
+    </main>
+    <div class="lightbox"></div>
+    <script src="js/manual.js"></script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>概要 - Next-Gen Images マニュアル</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <button class="hamburger-btn" aria-label="メニューを開く">&#9776;</button>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2 style="color:#fff;">Next-Gen Images</h2>
+            <span class="version">v1.0.0</span>
+            <img src="images/main-visual.png" alt="" style="width:100%;border-radius:4px;margin-top:8px;">
+        </div>
+        <ul>
+            <li><a href="index.html">概要</a></li>
+            <li><a href="setup.html">インストール・初期設定</a></li>
+            <li><a href="settings.html">設定タブ</a></li>
+            <li><a href="bulk.html">一括変換タブ</a></li>
+            <li><a href="status.html">診断タブ</a></li>
+            <li><a href="media.html">メディアライブラリ</a></li>
+            <li><a href="delivery.html">サイトでの表示のしくみ</a></li>
+            <li><a href="cli.html">コマンドでの操作</a></li>
+            <li><a href="troubleshooting.html">トラブルシューティング</a></li>
+        </ul>
+    </nav>
+    <main class="content">
+        <h1>Kashiwazaki Next-Gen Images マニュアル</h1>
+        <img src="images/main-visual.png" alt="Next-Gen Images メインビジュアル" style="width:100%; border-radius:8px; margin-bottom:24px;">
+        <p class="lead">メディアライブラリの画像（JPEG・PNG・GIF・WebP）を、軽い次世代の画像形式 WebP・AVIF に変換し、対応しているブラウザにだけ軽い画像を表示する WordPress プラグインです。元の画像は削除も変更もしません。</p>
+
+<p>画像はページの重さの大部分を占めることが多く、軽くすると表示が速くなる助けになります。このプラグインは、アップロードした画像の隣に WebP・AVIF のファイルを作り、ページの画像を「ブラウザが使える一番軽い形式」で表示するように切り替えます。対応していないブラウザには、これまでどおり元の画像を表示するので、表示が崩れることはありません。</p>
+<section><h2>主要機能</h2><div class="feature-cards">
+<div class="feature-card"><h3>自動で変換</h3><p>新しくアップロードした画像を、その場で WebP・AVIF に変換します。既存の画像も「一括変換」でまとめて変換できます。</p></div>
+<div class="feature-card"><h3>軽い画像を表示</h3><p>ブラウザが使える形式を AVIF → WebP → 元の画像の順に選んで表示します。サーバーの設定ファイルを書き換える必要はありません。</p></div>
+<div class="feature-card"><h3>元の画像は安全</h3><p>元の画像は削除も上書きもしません。いつでも元の表示に戻せます。ほかの画像最適化プラグインとも、表示が壊れないように共存します。</p></div>
+</div></section>
+<figure class="infographic"><img src="images/infographics/overview-flow.png" alt="画像をアップロードしてから軽い画像が表示されるまでの全体像" class="lightbox-trigger"><figcaption>アップロード → WebP・AVIF を作成 → 対応ブラウザに表示。元の画像はそのまま残ります</figcaption></figure>
+<section><h2>SEO / GEO における強み</h2>
+<h3>SEO（検索エンジン）</h3>
+<p>画像を軽くすると、ページの読み込みが速くなる助けになります。表示速度は検索エンジンがページの使いやすさを見るときの要素の 1 つとされています。ただし、順位はほかの多くの要素で決まるため、このプラグインだけで順位が上がるとは限りません。</p>
+<p>画像の切り替えは、元の画像の URL・代替テキスト（alt）・幅と高さをそのまま残したうえで行うので、画像検索向けの情報を損なわない作りです。サイトに出力するのは 1 行の CSS と小さなスクリプトだけで、ページの速度を落とさないようにしています。</p>
+<h3>GEO（AI 検索）</h3>
+<p>AI が参照するのは主にページの文章と HTML の構造です。このプラグインは文章や見出しを変えないため、AI 検索への影響は「ページが速く表示される」ことにとどまります。</p></section>
+<section><h2>目次</h2>
+<table><thead><tr><th style="width:35%;">ページ</th><th>内容</th></tr></thead><tbody><tr><td><a href="setup.html">インストール・初期設定</a></td><td>インストールから、最初に確認する設定、既存画像の変換まで</td></tr><tr><td><a href="settings.html">設定タブ</a></td><td>変換する形式・画質・自動変換・表示・詳細設定のすべての項目</td></tr><tr><td><a href="bulk.html">一括変換タブ</a></td><td>既存の画像をまとめて変換する・変換したファイルを削除する</td></tr><tr><td><a href="status.html">診断タブ</a></td><td>サーバーの対応状況・配信テスト・変換の実績の見方</td></tr><tr><td><a href="media.html">メディアライブラリ</a></td><td>画像ごとの変換状態の見方と、1 枚ずつの変換</td></tr><tr><td><a href="delivery.html">サイトでの表示のしくみ</a></td><td>どの画像が切り替わり、どの画像が切り替わらないか</td></tr><tr><td><a href="cli.html">コマンドでの操作</a></td><td>サーバーのコマンド（WP-CLI）で変換する方法</td></tr><tr><td><a href="troubleshooting.html">トラブルシューティング</a></td><td>困ったときの確認と対処、メッセージの意味</td></tr></tbody></table></section>
+<section><h2>動作要件</h2>
+<table><thead><tr><th style="width:35%;">項目</th><th>要件</th></tr></thead><tbody><tr><td>WordPress</td><td>5.9 以上</td></tr><tr><td>PHP</td><td>7.4 以上</td></tr><tr><td>画像を作る機能</td><td>PHP の GD または Imagick（どちらか一方で動きます）</td></tr><tr><td>AVIF</td><td>PHP 8.1 以上で AVIF に対応した GD、または AVIF に対応した Imagick が必要です。無ければ WebP だけで動きます</td></tr><tr><td>ブラウザ</td><td>どのブラウザでも表示できます（WebP・AVIF に対応していないブラウザには元の画像を表示します）</td></tr></tbody></table></section>
+
+        <nav class="page-nav">
+            <span></span>
+            <a href="setup.html" class="next">インストール・初期設定 &raquo;</a>
+        </nav>
+        <footer class="manual-footer">
+            <p>作者: <a href="https://www.tsuyoshikashiwazaki.jp/profile/" target="_blank" rel="noopener">柏崎剛（Tsuyoshi Kashiwazaki）</a></p>
+            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.0</p>
+        </footer>
+    </main>
+    <div class="lightbox"></div>
+    <script src="js/manual.js"></script>
+</body>
+</html>

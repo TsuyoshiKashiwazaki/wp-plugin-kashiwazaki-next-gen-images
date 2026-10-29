@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>コマンドでの操作 - Next-Gen Images マニュアル</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <button class="hamburger-btn" aria-label="メニューを開く">&#9776;</button>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2 style="color:#fff;">Next-Gen Images</h2>
+            <span class="version">v1.0.0</span>
+            <img src="images/main-visual.png" alt="" style="width:100%;border-radius:4px;margin-top:8px;">
+        </div>
+        <ul>
+            <li><a href="index.html">概要</a></li>
+            <li><a href="setup.html">インストール・初期設定</a></li>
+            <li><a href="settings.html">設定タブ</a></li>
+            <li><a href="bulk.html">一括変換タブ</a></li>
+            <li><a href="status.html">診断タブ</a></li>
+            <li><a href="media.html">メディアライブラリ</a></li>
+            <li><a href="delivery.html">サイトでの表示のしくみ</a></li>
+            <li><a href="cli.html">コマンドでの操作</a></li>
+            <li><a href="troubleshooting.html">トラブルシューティング</a></li>
+        </ul>
+    </nav>
+    <main class="content">
+        <h1>コマンドでの操作</h1>
+        <p class="lead">サーバーで WordPress のコマンド（WP-CLI）を使える場合は、コマンドで変換したり、状況を確かめたりできます。画像が多いサイトの最初の変換に向いています。</p>
+
+<figure class="infographic"><img src="images/infographics/cli-flow.png" alt="コマンドで変換する流れ" class="lightbox-trigger"><figcaption>status で状況を確かめ、convert で変換します</figcaption></figure>
+<section><h2>コマンドの一覧</h2>
+<table><thead><tr><th style="width:50%;">コマンド</th><th>内容</th></tr></thead><tbody><tr><td><code>wp kashiwazaki-next-gen-images status</code></td><td>状況を表示します。このサーバーで作れる形式、画像の数・変換済み・失敗の数、形式ごとのファイル数と容量の変化を表示します</td></tr><tr><td><code>wp kashiwazaki-next-gen-images convert</code></td><td>変換が必要な画像をすべて変換します</td></tr><tr><td><code>wp kashiwazaki-next-gen-images convert 123 456</code></td><td>指定した番号（ID）の画像だけを変換します</td></tr></tbody></table>
+<h3>オプション</h3>
+<table><thead><tr><th style="width:35%;">オプション</th><th>内容</th></tr></thead><tbody><tr><td><code>--force</code></td><td>変換済みの画像も作り直します（画像の番号を指定しないときは、すべての画像）。以前に失敗した画像も試します</td></tr><tr><td><code>--retry-failed</code></td><td>以前に失敗した画像（メモリ不足・エンジンのエラーなど、再試行できるもの）も試します</td></tr></tbody></table>
+</section>
+<section><h2>使い方の例</h2>
+<div class="step"><div class="step-number">1</div><div class="step-body"><h4>状況を確かめる</h4><pre><code>wp kashiwazaki-next-gen-images status</code></pre></div></div><div class="step"><div class="step-number">2</div><div class="step-body"><h4>変換する</h4><pre><code>wp kashiwazaki-next-gen-images convert</code></pre><p>進み具合のバーが表示され、終わると「Success: Converted ◯ files, ◯ attachments failed, saved ◯.」（変換したファイル数・失敗した画像の数・減った容量）と表示されます。変換する画像が無いときは「Success: Nothing to convert.」と表示されます。</p></div></div><div class="step"><div class="step-number">3</div><div class="step-body"><h4>画質を変えたあとに作り直す</h4><pre><code>wp kashiwazaki-next-gen-images convert --force</code></pre></div></div>
+<div class="callout callout-note"><strong>画面の一括変換との違い</strong><p>コマンドは時間で区切らず、1 回で最後まで処理します。</p></div>
+</section>
+<section><h2>出てくるメッセージ</h2>
+<table><thead><tr><th style="width:50%;">メッセージ</th><th>意味と対処</th></tr></thead><tbody><tr><td>Warning: ID ◯: （理由）</td><td>その画像の変換に失敗しました。理由は英語の短い説明で表示されます</td></tr><tr><td>Warning: ID ◯: skipped because another process is converting it.</td><td>画面や予約処理が同じ画像を変換中だったため、飛ばしました</td></tr><tr><td>Warning: ◯ attachments were skipped because another process was converting them. Run the command again.</td><td>上の理由で飛ばした画像の数です。もう一度コマンドを実行してください</td></tr><tr><td>Error: Could not list the images to convert (database query failed). Nothing was converted.</td><td>データベースの一時的な不調で、対象の画像を探せませんでした。何も変換していません。しばらくしてからもう一度実行してください</td></tr><tr><td>Error: Unknown action. Use: convert | status</td><td>コマンドの名前が違います。convert か status を指定してください</td></tr></tbody></table>
+</section>
+
+        <nav class="page-nav">
+            <a href="delivery.html" class="prev">&laquo; サイトでの表示のしくみ</a>
+            <a href="troubleshooting.html" class="next">トラブルシューティング &raquo;</a>
+        </nav>
+        <footer class="manual-footer">
+            <p>作者: <a href="https://www.tsuyoshikashiwazaki.jp/profile/" target="_blank" rel="noopener">柏崎剛（Tsuyoshi Kashiwazaki）</a></p>
+            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.0</p>
+        </footer>
+    </main>
+    <div class="lightbox"></div>
+    <script src="js/manual.js"></script>
+</body>
+</html>

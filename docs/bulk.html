@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>一括変換タブ - Next-Gen Images マニュアル</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <button class="hamburger-btn" aria-label="メニューを開く">&#9776;</button>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2 style="color:#fff;">Next-Gen Images</h2>
+            <span class="version">v1.0.0</span>
+            <img src="images/main-visual.png" alt="" style="width:100%;border-radius:4px;margin-top:8px;">
+        </div>
+        <ul>
+            <li><a href="index.html">概要</a></li>
+            <li><a href="setup.html">インストール・初期設定</a></li>
+            <li><a href="settings.html">設定タブ</a></li>
+            <li><a href="bulk.html">一括変換タブ</a></li>
+            <li><a href="status.html">診断タブ</a></li>
+            <li><a href="media.html">メディアライブラリ</a></li>
+            <li><a href="delivery.html">サイトでの表示のしくみ</a></li>
+            <li><a href="cli.html">コマンドでの操作</a></li>
+            <li><a href="troubleshooting.html">トラブルシューティング</a></li>
+        </ul>
+    </nav>
+    <main class="content">
+        <h1>一括変換タブ</h1>
+        <p class="lead">すでにメディアライブラリにある画像を、まとめて WebP・AVIF に変換する画面です。このプラグインが作った変換ファイルをまとめて削除することもできます。</p>
+
+<figure class="screenshot"><img src="images/screenshots/04-bulk.png" alt="一括変換タブ" class="lightbox-trigger"><figcaption>一括変換タブ</figcaption></figure>
+<section><h2>既存の画像を一括変換</h2>
+<p>メディアライブラリの画像を、1 枚ずつ順番に変換します。</p>
+<figure class="infographic"><img src="images/infographics/bulk-flow.png" alt="一括変換の流れ" class="lightbox-trigger"><figcaption>開始 → 1 枚ずつ変換 → 進み具合の表示 → 完了。停止しても続きから再開できます</figcaption></figure>
+<h3>数字の見方</h3>
+<table><thead><tr><th style="width:35%;">表示</th><th>意味</th></tr></thead><tbody><tr><td>画像の総数</td><td>メディアライブラリの JPEG・PNG・GIF・WebP の画像の数</td></tr><tr><td>変換済み</td><td>WebP か AVIF が 1 つ以上ある画像の数</td></tr><tr><td>未変換（目安）</td><td>総数から変換済みを引いた数。軽くならない画像やアニメーション画像など、変換しない画像も含むため、0 にならないことがあります</td></tr></tbody></table>
+<h3>開始前に選べること</h3>
+<h3>以前に失敗した画像も試す</h3><p>前回うまく変換できなかった画像を、もう一度試します。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>オフ</td></tr><tr><td style="width:30%;">対象になる失敗</td><td>メモリ不足・エンジンのエラー・出力の検証に失敗・書き込み失敗・読み込み失敗</td></tr><tr><td style="width:30%;">対象にならないもの</td><td>「軽くならないため」「画素数が上限超過」など、理由があって変換しなかった画像。これらを作り直すには「すべて作り直す」を使います</td></tr></tbody></table>
+<h3>すべて作り直す</h3><p>変換済みの画像も含めて、すべて作り直します。画質などの設定を変えたあとに使います。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>オフ</td></tr><tr><td style="width:30%;">オンのとき</td><td>すべての画像を対象にし、以前に失敗した画像も試します</td></tr><tr><td style="width:30%;">オフのとき</td><td>まだ変換していない画像、元の画像が差し替わった画像、変換ファイルが消えた画像だけを変換します</td></tr><tr><td style="width:30%;">注意</td><td>他のプラグインが作った WebP・AVIF は上書きしません</td></tr></tbody></table>
+<p>この 2 つのスイッチは保存されません。開始したときの状態だけが使われます。</p>
+<h3>操作手順</h3>
+<div class="step"><div class="step-number">1</div><div class="step-body"><h4>「一括変換を開始」を押す</h4><p>ボタンが「処理中…」に変わり、進み具合が表示されます。</p></div></div><div class="step"><div class="step-number">2</div><div class="step-body"><h4>進み具合を見る</h4><p>進捗バーと「◯% — 変換中… 処理した枚数 / 全体の枚数（変換したファイル数・失敗の数・減った容量）」が表示されます。下の行には経過時間、残りの目安、いま処理している画像の名前が出ます。</p><figure class="screenshot"><img src="images/screenshots/07-bulk-running.png" alt="一括変換の実行中の表示" class="lightbox-trigger"><figcaption>実行中の表示</figcaption></figure></div></div><div class="step"><div class="step-number">3</div><div class="step-body"><h4>完了を確かめる</h4><p>終わると進捗バーが 100% になり、「完了しました。変換 ◯ ファイル / 失敗 ◯ 枚 / 削減 ◯」と、かかった時間が表示されます。</p><figure class="screenshot"><img src="images/screenshots/08-bulk-done.png" alt="一括変換の完了後の表示" class="lightbox-trigger"><figcaption>完了したときの表示</figcaption></figure></div></div>
+<div class="callout callout-tip"><strong>画面を離れても進みます</strong><p>別のページに移っても、管理画面を開いている間は処理が進みます。管理画面を閉じても、WordPress の予約処理で少しずつ進みます。実行中は、ほかの管理画面の上部にも進み具合が表示され、「詳しく見る」でこの画面に戻れます。</p></div>
+<p>進み具合の下には、処理の記録（ログ）が新しい順に最大 30 行表示されます。失敗は目立つ色で表示されます。</p><h3>停止と再開</h3>
+<table><thead><tr><th style="width:35%;">ボタン</th><th>動き</th></tr></thead><tbody><tr><td>停止</td><td>処理中の 1 枚が終わったところで止めます。押すと「停止しています…」と表示され、止まると「変換を一時停止中」になります</td></tr><tr><td>続きから再開</td><td>停止したあとは「一括変換を開始」がこの名前に変わります。押すと止めたところから続けます。このとき、開始前のスイッチを変えても反映されません</td></tr><tr><td>最初からやり直す</td><td>停止中にだけ表示されます。確認のメッセージ「最初からやり直します。よろしいですか？」で OK を押すと、いまのスイッチの状態で最初から始めます</td></tr></tbody></table>
+</section>
+
+<section><h2>変換済みファイルの削除</h2>
+<p>このプラグインが作った WebP・AVIF だけを消します。元の画像は消えません。</p>
+<div class="step"><div class="step-number">1</div><div class="step-body"><h4>「すべての変換済みファイルを削除」の「削除する」を押す</h4><p>確認のメッセージが表示されます。</p></div></div><div class="step"><div class="step-number">2</div><div class="step-body"><h4>確認のメッセージで OK を押す</h4><p>「変換済みの WebP / AVIF ファイルを削除します。元の画像は削除されません。… よろしいですか？」と表示されます。OK を押すと削除が始まり、上の進捗欄に「削除中…」と進み具合が出ます。キャンセルを押すと何もしません。</p></div></div><div class="step"><div class="step-number">3</div><div class="step-body"><h4>完了を確かめる</h4><p>「完了しました。変換済みファイル ◯ 件（◯）を削除しました。」と表示されます。</p></div></div>
+<div class="callout callout-warning"><strong>削除したあとはキャッシュも消してください</strong><p>ページキャッシュ系のプラグインやサーバーのキャッシュを使っている場合は、削除したあとでキャッシュも消してください。古いページが残ると、対応ブラウザで画像が表示されなくなります。</p></div>
+<div class="callout callout-note"><strong>削除されないもの</strong><p>元の画像、他のプラグインが作った WebP・AVIF、別の画像としてメディアライブラリに登録されているファイルは削除しません。削除したあとも「アップロード時に自動で変換」がオンなら、新しい画像は変換されます。</p></div>
+<p>変換と削除は同時に 1 つだけ実行できます。停止中の削除があるときは、「削除する」が「続きから再開」に変わります。</p>
+</section>
+
+<section><h2>この画面に出るメッセージ</h2>
+<table><thead><tr><th style="width:45%;">メッセージ</th><th>意味と対処</th></tr></thead><tbody><tr><td>変換できる形式がありません。…</td><td>設定で WebP・AVIF がどちらもオフか、サーバーがどちらも作れません。「設定」タブで形式をオンにするか、「診断」タブで対応状況を確認してください。このとき「一括変換を開始」は押せません</td></tr><tr><td>再開しました。／停止しました。</td><td>再開・停止が完了しました</td></tr><tr><td>ID ◯: 時間内に終わらなかったため、飛ばしました。</td><td>その画像の変換に時間がかかりすぎたため飛ばしました（失敗に数えます）。大きすぎる画像のことがあります</td></tr><tr><td>ID ◯: 消せなかった変換ファイルが ◯ 件あります（権限を確かめて、もう一度実行してください）。</td><td>ファイルを削除できませんでした。サーバーのフォルダの書き込み権限を確かめて、もう一度実行してください</td></tr><tr><td>対象の画像を探せませんでした（データベースの問い合わせが失敗しました）。一時停止しました。</td><td>データベースの一時的な不調です。しばらくしてから「続きから再開」を押してください</td></tr><tr><td>ID ◯: （ファイル名） → webp: 理由 (英語の説明)</td><td>再試行できる失敗の詳しい内容です。英語の説明は、メモリ不足・フォルダに書き込めない・空き容量不足などを表します</td></tr><tr><td>サーバーの応答が不正です（時間切れまたはメモリ不足の可能性）。…</td><td>サーバーが処理の途中で止まりました。自動で 3 回まで試し直してから表示します。しばらくしてからもう一度お試しください</td></tr></tbody></table>
+</section>
+
+        <nav class="page-nav">
+            <a href="settings.html" class="prev">&laquo; 設定タブ</a>
+            <a href="status.html" class="next">診断タブ &raquo;</a>
+        </nav>
+        <footer class="manual-footer">
+            <p>作者: <a href="https://www.tsuyoshikashiwazaki.jp/profile/" target="_blank" rel="noopener">柏崎剛（Tsuyoshi Kashiwazaki）</a></p>
+            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.0</p>
+        </footer>
+    </main>
+    <div class="lightbox"></div>
+    <script src="js/manual.js"></script>
+</body>
+</html>

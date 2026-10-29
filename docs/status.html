@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>診断タブ - Next-Gen Images マニュアル</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <button class="hamburger-btn" aria-label="メニューを開く">&#9776;</button>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2 style="color:#fff;">Next-Gen Images</h2>
+            <span class="version">v1.0.0</span>
+            <img src="images/main-visual.png" alt="" style="width:100%;border-radius:4px;margin-top:8px;">
+        </div>
+        <ul>
+            <li><a href="index.html">概要</a></li>
+            <li><a href="setup.html">インストール・初期設定</a></li>
+            <li><a href="settings.html">設定タブ</a></li>
+            <li><a href="bulk.html">一括変換タブ</a></li>
+            <li><a href="status.html">診断タブ</a></li>
+            <li><a href="media.html">メディアライブラリ</a></li>
+            <li><a href="delivery.html">サイトでの表示のしくみ</a></li>
+            <li><a href="cli.html">コマンドでの操作</a></li>
+            <li><a href="troubleshooting.html">トラブルシューティング</a></li>
+        </ul>
+    </nav>
+    <main class="content">
+        <h1>診断タブ</h1>
+        <p class="lead">このサーバーで WebP・AVIF を作れるか、正しく表示できるか、どれだけ軽くなったかを確かめる画面です。</p>
+
+<figure class="screenshot"><img src="images/screenshots/05-status.png" alt="診断タブ" class="lightbox-trigger"><figcaption>診断タブ</figcaption></figure>
+<figure class="infographic"><img src="images/infographics/status-check.png" alt="診断タブで確かめる 3 つのこと" class="lightbox-trigger"><figcaption>作れるか・正しく届くか・どれだけ軽くなったか を確かめます</figcaption></figure>
+<section><h2>変換エンジン（このサーバーの対応状況）</h2>
+<p>画像を作る道具（GD・Imagick）ごとに、WebP と AVIF を作れるかを表示します。</p>
+<table><thead><tr><th style="width:35%;">列</th><th>意味</th></tr></thead><tbody><tr><td>ライブラリ</td><td>画像を作る道具の名前（GD・Imagick）</td></tr><tr><td>WebP / AVIF</td><td>「○ 利用可」= 実際に小さな画像を書き出せた／「× 利用不可」= 書き出せない</td></tr><tr><td>備考</td><td>道具の版。入っていなければ「未導入」</td></tr></tbody></table>
+<p>「利用可」は、実際に小さな画像を書き出せたことを確認した結果です（道具が入っているだけでは「利用可」になりません）。AVIF を作れないときは「AVIF が利用不可でも、WebP だけで動作します。…」と表示されます。</p>
+<h3>動作確認をやり直す</h3><p>書き出しのテストをやり直します。</p><table><tbody><tr><td style="width:30%;">使う場面</td><td>サーバーの PHP の設定を変えたり、道具を追加したりしたあと</td></tr><tr><td style="width:30%;">押したあと</td><td>「処理中…」と表示され、終わると画面が読み込み直されます。失敗したときはボタンの横にメッセージが出ます</td></tr></tbody></table>
+</section>
+
+<section><h2>サーバー環境</h2>
+<table><thead><tr><th style="width:35%;">項目</th><th>意味</th></tr></thead><tbody><tr><td>PHP</td><td>サーバーの PHP の版</td></tr><tr><td>memory_limit</td><td>1 回の処理で使えるメモリの上限。大きな画像の変換に関わります</td></tr><tr><td>max_execution_time</td><td>1 回の処理にかけられる時間の上限（「◯ 秒」か「無制限」）</td></tr><tr><td>1 回の処理に使う時間（自動）</td><td>一括変換などで 1 回に使う時間。上の時間の半分（5〜20 秒）を自動で使います</td></tr><tr><td>WP-Cron</td><td>WordPress の予約処理が動くか。「無効」のときは、「あとで自動」の変換が動きません。「アップロード時（おすすめ）」を選んでください</td></tr><tr><td>アップロードフォルダ</td><td>「書き込み可」か「書き込み不可（変換ファイルを保存できません）」</td></tr></tbody></table>
+</section>
+
+<section><h2>配信テスト（サーバーが WebP・AVIF を正しく配信できるか）</h2>
+<p>サーバーが .webp・.avif を正しい種類で送らないと、ブラウザが画像を表示できません。そのため、テストで問題が見つかった形式は自動で表示を止めます。</p>
+<table><thead><tr><th style="width:40%;">表示</th><th>意味</th><th style="width:15%;">表示を続けるか</th></tr></thead><tbody><tr><td>正常（配信できます）</td><td>正しく送れています</td><td>続ける</td></tr><tr><td>注意（種類の指定が不正ですが、ブラウザが補って表示できる見込みです）</td><td>種類の指定が正しくないが、ブラウザが補える状態</td><td>続ける</td></tr><tr><td>問題あり（この形式の配信を止めています）</td><td>ブラウザが表示できない状態</td><td><strong>止める</strong></td></tr><tr><td>未確認</td><td>まだテストしていない、または通信できなかった</td><td>続ける</td></tr></tbody></table>
+<p>表示の後ろに「 — 」で、届いた種類や通信のエラーなどの補足が付くことがあります。</p>
+<h3>配信テストを実行</h3><p>配信テストをやり直します。</p><table><tbody><tr><td style="width:30%;">押したあと</td><td>「処理中…」のあと、表の表示が新しくなります</td></tr><tr><td style="width:30%;">「問題あり」のとき</td><td>直したあとにこのボタンで再テストするまで、その形式の表示は止まったままです</td></tr></tbody></table>
+<h3>配信テストに失敗したときの対処（Apache 系のレンタルサーバー向け）</h3>
+<p>この見出しを押すと開きます。WordPress を置いているフォルダの .htaccess に、表示された行を書き足してから、もう一度テストしてください。</p>
+<pre><code>&lt;IfModule mod_mime.c&gt;
+AddType image/webp .webp
+AddType image/avif .avif
+&lt;/IfModule&gt;</code></pre>
+<div class="callout callout-warning"><strong>.htaccess を書き換えるとき</strong><p>書き換える前に、元のファイルを控えてください。わからない場合は、サーバー会社に「WebP と AVIF を正しい種類で配信する設定」を問い合わせてください。</p></div>
+</section>
+
+<section><h2>変換の実績</h2>
+<table><thead><tr><th style="width:35%;">列</th><th>意味</th></tr></thead><tbody><tr><td>形式</td><td>WEBP・AVIF</td></tr><tr><td>ファイル数</td><td>その形式で作ったファイルの数（画像のサイズ違いも 1 つずつ数えます）</td></tr><tr><td>元の合計</td><td>その形式を作った元の画像の容量の合計</td></tr><tr><td>変換後の合計</td><td>作ったファイルの容量の合計</td></tr><tr><td>削減</td><td>減った容量と、その割合</td></tr></tbody></table>
+<p>表の下に「画像 ◯ 枚中、変換済み ◯ 枚、失敗 ◯ 枚。集計は 10 分ごとに更新されます。」と表示されます。「今すぐ再集計」を押すと、その場で数え直します。変換や削除をしたあとも数え直されます。</p>
+</section>
+
+        <nav class="page-nav">
+            <a href="bulk.html" class="prev">&laquo; 一括変換タブ</a>
+            <a href="media.html" class="next">メディアライブラリ &raquo;</a>
+        </nav>
+        <footer class="manual-footer">
+            <p>作者: <a href="https://www.tsuyoshikashiwazaki.jp/profile/" target="_blank" rel="noopener">柏崎剛（Tsuyoshi Kashiwazaki）</a></p>
+            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.0</p>
+        </footer>
+    </main>
+    <div class="lightbox"></div>
+    <script src="js/manual.js"></script>
+</body>
+</html>

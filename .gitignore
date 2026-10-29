@@ -1,0 +1,46 @@
+# WordPress
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Node modules (if any)
+node_modules/
+
+# Composer
+/vendor/
+
+# Build artifacts
+/build/
+/dist/
+
+# Environment files
+.env
+.env.local
+
+# AI / 開発ツール設定 (公開リポジトリに入れない)
+.claude/
+CLAUDE.md
+.codex
+.cursor/
+.aider*
+.playwright-mcp/
+
+# マニュアルの作業用の棚卸し (公開しない)
+docs/.inventory.md
