@@ -11,7 +11,7 @@
     <nav class="sidebar">
         <div class="sidebar-header">
             <h2 style="color:#fff;">Next-Gen Images</h2>
-            <span class="version">v1.0.0</span>
+            <span class="version">v1.0.1</span>
             <img src="images/main-visual.png" alt="" style="width:100%;border-radius:4px;margin-top:8px;">
         </div>
         <ul>
@@ -23,6 +23,7 @@
             <li><a href="media.html">メディアライブラリ</a></li>
             <li><a href="delivery.html">サイトでの表示のしくみ</a></li>
             <li><a href="cli.html">コマンドでの操作</a></li>
+            <li><a href="cavif.html">cavif で AVIF を作る</a></li>
             <li><a href="troubleshooting.html">トラブルシューティング</a></li>
         </ul>
     </nav>
@@ -33,8 +34,9 @@
 <figure class="screenshot"><img src="images/screenshots/05-status.png" alt="診断タブ" class="lightbox-trigger"><figcaption>診断タブ</figcaption></figure>
 <figure class="infographic"><img src="images/infographics/status-check.png" alt="診断タブで確かめる 3 つのこと" class="lightbox-trigger"><figcaption>作れるか・正しく届くか・どれだけ軽くなったか を確かめます</figcaption></figure>
 <section><h2>変換エンジン（このサーバーの対応状況）</h2>
-<p>画像を作る道具（GD・Imagick）ごとに、WebP と AVIF を作れるかを表示します。</p>
-<table><thead><tr><th style="width:35%;">列</th><th>意味</th></tr></thead><tbody><tr><td>ライブラリ</td><td>画像を作る道具の名前（GD・Imagick）</td></tr><tr><td>WebP / AVIF</td><td>「○ 利用可」= 実際に小さな画像を書き出せた／「× 利用不可」= 書き出せない</td></tr><tr><td>備考</td><td>道具の版。入っていなければ「未導入」</td></tr></tbody></table>
+<p>画像を作る道具（GD・Imagick・cavif）ごとに、WebP と AVIF を作れるかを表示します。</p>
+<table><thead><tr><th style="width:35%;">列</th><th>意味</th></tr></thead><tbody><tr><td>ライブラリ</td><td>画像を作る道具の名前（GD・Imagick・cavif（外部プログラム））</td></tr><tr><td>WebP / AVIF</td><td>「○ 利用可」= 実際に小さな画像を書き出せた／「× 利用不可」= 書き出せない／「—」= その道具では作らない形式（cavif の WebP）</td></tr><tr><td>備考</td><td>道具の版。入っていなければ「未導入」。cavif の行は、設定していなければ「未設定（…）」、使えないときはその理由</td></tr></tbody></table>
+<p>「cavif（外部プログラム）」は、GD・Imagick で AVIF を作れないサーバーのための追加の手段です。設定していなければ「未設定」と表示され、これまでと同じ動きをします。使い方は <a href="cavif.html">cavif で AVIF を作る</a> を参照してください。</p>
 <p>「利用可」は、実際に小さな画像を書き出せたことを確認した結果です（道具が入っているだけでは「利用可」になりません）。AVIF を作れないときは「AVIF が利用不可でも、WebP だけで動作します。…」と表示されます。</p>
 <h3>動作確認をやり直す</h3><p>書き出しのテストをやり直します。</p><table><tbody><tr><td style="width:30%;">使う場面</td><td>サーバーの PHP の設定を変えたり、道具を追加したりしたあと</td></tr><tr><td style="width:30%;">押したあと</td><td>「処理中…」と表示され、終わると画面が読み込み直されます。失敗したときはボタンの横にメッセージが出ます</td></tr></tbody></table>
 </section>
@@ -48,8 +50,14 @@
 <table><thead><tr><th style="width:40%;">表示</th><th>意味</th><th style="width:15%;">表示を続けるか</th></tr></thead><tbody><tr><td>正常（配信できます）</td><td>正しく送れています</td><td>続ける</td></tr><tr><td>注意（種類の指定が不正ですが、ブラウザが補って表示できる見込みです）</td><td>種類の指定が正しくないが、ブラウザが補える状態</td><td>続ける</td></tr><tr><td>問題あり（この形式の配信を止めています）</td><td>ブラウザが表示できない状態</td><td><strong>止める</strong></td></tr><tr><td>未確認</td><td>まだテストしていない、または通信できなかった</td><td>続ける</td></tr></tbody></table>
 <p>表示の後ろに「 — 」で、届いた種類や通信のエラーなどの補足が付くことがあります。</p>
 <h3>配信テストを実行</h3><p>配信テストをやり直します。</p><table><tbody><tr><td style="width:30%;">押したあと</td><td>「処理中…」のあと、表の表示が新しくなります</td></tr><tr><td style="width:30%;">「問題あり」のとき</td><td>直したあとにこのボタンで再テストするまで、その形式の表示は止まったままです</td></tr></tbody></table>
-<h3>配信テストに失敗したときの対処（Apache 系のレンタルサーバー向け）</h3>
-<p>この見出しを押すと開きます。WordPress を置いているフォルダの .htaccess に、表示された行を書き足してから、もう一度テストしてください。</p>
+<h3>自動で直す</h3><p>サーバーが WebP・AVIF を正しい種類で送っていないとき（「注意」か「問題あり」のとき）にだけ表示されるボタンです。押すと、プラグインが画像フォルダの設定ファイル（.htaccess）に種類の指定を書き足して、正しい種類で送られるようにします。設定ファイルを自分で書き換える必要はありません。</p>
+<figure class="screenshot"><img src="images/screenshots/10-status-mime-fix.png" alt="種類が正しくないときの配信テスト" class="lightbox-trigger"><figcaption>種類が正しくないときは、「自動で直す」のボタンが出ます</figcaption></figure>
+<table><tbody><tr><td style="width:30%;">表示される条件</td><td>このサイトで使っている形式（作れる形式、またはすでに変換ファイルがある形式）が「注意」か「問題あり」のとき</td></tr><tr><td style="width:30%;">押したあとの流れ</td><td>先にテスト用の小さなフォルダで試し、うまくいくと分かってから、画像フォルダに書き足します。書き足したあとにも、もう一度確かめます</td></tr><tr><td style="width:30%;">うまくいったとき</td><td>画面が読み込み直され、配信テストの表示が「正常（配信できます）」になります。「問題あり」で止まっていた形式の表示も再開します</td></tr><tr><td style="width:30%;">うまくいかないとき</td><td>ボタンの横に理由が表示されます。その場合、設定ファイルは書き換えていません（書き足したあとの確認で問題が見つかったときは、書き足す前の状態に戻します）</td></tr><tr><td style="width:30%;">書き足す場所</td><td>画像フォルダ（wp-content/uploads）の .htaccess だけです。すでに他の内容があれば、それは残します</td></tr><tr><td style="width:30%;">使えないサーバー</td><td>.htaccess を使わない種類のサーバーでは効きません。その場合は、サーバー会社に「WebP と AVIF を正しい種類で配信する設定」を問い合わせてください</td></tr></tbody></table>
+<h3>書き足した指定を消す</h3><p>「自動で直す」で書き足したあとに表示されるボタンです。プラグインが書き足した指定だけを取り除き、他の内容は残します。プラグインを削除したときにも、同じように取り除かれます。</p>
+<figure class="screenshot"><img src="images/screenshots/11-status-mime-fixed.png" alt="自動で直したあとの配信テスト" class="lightbox-trigger"><figcaption>直したあとは、「書き足した指定を消す」のボタンに変わります</figcaption></figure>
+<table><tbody><tr><td style="width:30%;">使う場面</td><td>サーバーの設定を自分で直したあとなど、プラグインが書き足した指定が要らなくなったとき</td></tr><tr><td style="width:30%;">押したあと</td><td>画面が読み込み直され、配信テストをやり直した結果が表示されます。サーバーが種類を正しく送れない状態に戻ると、「注意」か「問題あり」の表示に戻ります</td></tr></tbody></table>
+<h3>自動で直せないとき・手で直すときの方法（Apache 系のレンタルサーバー向け）</h3>
+<p>この見出しを押すと開きます。WordPress を置いているフォルダの .htaccess に、表示された 4 行を書き足してから、もう一度テストしてください。</p>
 <pre><code>&lt;IfModule mod_mime.c&gt;
 AddType image/webp .webp
 AddType image/avif .avif
@@ -68,7 +76,7 @@ AddType image/avif .avif
         </nav>
         <footer class="manual-footer">
             <p>作者: <a href="https://www.tsuyoshikashiwazaki.jp/profile/" target="_blank" rel="noopener">柏崎剛（Tsuyoshi Kashiwazaki）</a></p>
-            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.0</p>
+            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.1</p>
         </footer>
     </main>
     <div class="lightbox"></div>

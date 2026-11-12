@@ -11,7 +11,7 @@
     <nav class="sidebar">
         <div class="sidebar-header">
             <h2 style="color:#fff;">Next-Gen Images</h2>
-            <span class="version">v1.0.0</span>
+            <span class="version">v1.0.1</span>
             <img src="images/main-visual.png" alt="" style="width:100%;border-radius:4px;margin-top:8px;">
         </div>
         <ul>
@@ -23,6 +23,7 @@
             <li><a href="media.html">メディアライブラリ</a></li>
             <li><a href="delivery.html">サイトでの表示のしくみ</a></li>
             <li><a href="cli.html">コマンドでの操作</a></li>
+            <li><a href="cavif.html">cavif で AVIF を作る</a></li>
             <li><a href="troubleshooting.html">トラブルシューティング</a></li>
         </ul>
     </nav>
@@ -36,14 +37,14 @@
 <table><thead><tr><th style="width:35%;">場所</th><th>表示</th></tr></thead><tbody><tr><td>メディア → ライブラリ（リスト表示）</td><td>「Kashiwazaki Next-Gen Images」の列。グリッド表示には出ません。列は画面右上の「表示オプション」で隠せます</td></tr><tr><td>画像の編集画面・メディアの詳細</td><td>「Kashiwazaki Next-Gen Images」の項目。JPEG・PNG・GIF・WebP の画像で、編集できる人にだけ表示されます</td></tr></tbody></table>
 </section>
 <section><h2>状態の見方</h2>
-<table><thead><tr><th style="width:40%;">表示</th><th>意味</th><th style="width:15%;">ボタン</th></tr></thead><tbody><tr><td>AVIF / WEBP の緑のバッジと「合計 ◯ 削減」</td><td>作った形式と、全サイズ合計で減った容量</td><td>再変換</td></tr><tr><td>未変換</td><td>まだ変換していません</td><td>今すぐ変換</td></tr><tr><td>変換なし（理由）</td><td>理由があって変換しませんでした（下の表）</td><td>今すぐ変換</td></tr><tr><td>変換できず（理由）</td><td>変換に失敗しました。赤いバッジは、作れた形式が 1 つも無いことを表します</td><td>今すぐ変換</td></tr><tr><td>一部のサイズが未処理</td><td>時間切れで一部のサイズが残っています。少しあとで自動で続けます</td><td>—</td></tr><tr><td>対象外の形式</td><td>JPEG・PNG・GIF・WebP 以外のファイルです</td><td>—</td></tr></tbody></table>
+<table><thead><tr><th style="width:40%;">表示</th><th>意味</th><th style="width:15%;">ボタン</th></tr></thead><tbody><tr><td>AVIF / WEBP の緑のバッジと「合計 ◯ 削減」</td><td>作った形式と、全サイズ合計で減った容量</td><td>再変換</td></tr><tr><td>未変換</td><td>まだ変換していません</td><td>今すぐ変換</td></tr><tr><td>変換なし（理由）</td><td>理由があって変換しませんでした（下の表）</td><td>今すぐ変換</td></tr><tr><td>変換できず（理由）</td><td>変換に失敗しました。赤いバッジは、作れた形式が 1 つも無いことを表します</td><td>今すぐ変換</td></tr><tr><td>一部のサイズが未処理</td><td>一部のサイズ・形式の処理が残っています（時間切れ、「PNG・GIF は劣化なしで変換」の切り替え、変換ファイルが消えた など）。自動変換の途中なら少しあとで続けます。そうでなければ「一括変換」タブで「一括変換を開始」を押すと処理されます</td><td>—</td></tr><tr><td>一部のサイズで変換できず</td><td>WebP はできたが AVIF だけ失敗した、など、一部のサイズ・形式だけが変換できませんでした。一括変換の「以前に失敗した画像も試す」で、もう一度試せます</td><td>再変換</td></tr><tr><td>対象外の形式</td><td>JPEG・PNG・GIF・WebP 以外のファイルです</td><td>—</td></tr></tbody></table>
 </section>
 <section><h2>ボタン</h2>
 <h3>今すぐ変換</h3><p>この画像だけを変換します。</p><table><tbody><tr><td style="width:30%;">押したあと</td><td>「処理中…」のあと、状態の表示が新しくなります。時間がかかる画像は、自動で続けます</td></tr><tr><td style="width:30%;">注意</td><td>「軽くならないため」などの理由で変換しなかった画像は、押しても変わりません。作り直すには「再変換」を使います</td></tr></tbody></table>
 <h3>再変換</h3><p>この画像を作り直します。</p><table><tbody><tr><td style="width:30%;">管理者が押したとき</td><td>作り直します（以前の失敗も試し直します）</td></tr><tr><td style="width:30%;">管理者以外が押したとき</td><td>作り直しにはならず、「今すぐ変換」と同じ動きになります</td></tr><tr><td style="width:30%;">失敗したとき</td><td>ブラウザの警告が表示されます</td></tr></tbody></table>
 </section>
 <section><h2>「変換なし」「変換できず」の理由</h2>
-<table><thead><tr><th style="width:45%;">表示</th><th>意味</th><th style="width:20%;">一括変換の「以前に失敗した画像も試す」で再試行</th></tr></thead><tbody><tr><td>変換なし（軽くならないため）</td><td>変換すると元より大きくなるため保存しませんでした</td><td>×</td></tr><tr><td>変換なし（アニメーション画像）</td><td>動く GIF・PNG・WebP は変換しません</td><td>×</td></tr><tr><td>変換なし（画素数が上限超過）</td><td>詳細設定の「変換する画像の最大サイズ」を超えています</td><td>×</td></tr><tr><td>変換できず（メモリ不足）</td><td>サーバーのメモリが足りませんでした</td><td>○</td></tr><tr><td>変換なし（sRGB 以外の色設定）</td><td>色の設定を保ったまま変換できないため、色が変わるのを避けました</td><td>×</td></tr><tr><td>変換なし（CMYK 画像）</td><td>印刷用の色の画像は変換しません</td><td>×</td></tr><tr><td>変換なし（劣化なしの設定のため。AVIF は劣化なしで作れません）</td><td>「PNG・GIF は劣化なしで変換」がオンのため、PNG・GIF の AVIF は作りません</td><td>×（設定を変えれば対象になります）</td></tr><tr><td>変換なし（劣化なしの設定ですが、このサーバーは劣化なしの WebP を書き出せません）</td><td>サーバーの道具が劣化なしの WebP に対応していません</td><td>×</td></tr><tr><td>変換なし（拡張子と中身が不一致）</td><td>ファイル名の拡張子と中身の形式が違います</td><td>×</td></tr><tr><td>変換なし（画像として読めません）</td><td>画像が壊れているか、大きさがわかりません</td><td>×</td></tr><tr><td>変換できず（読み込み失敗）</td><td>画像を読み込めませんでした</td><td>○</td></tr><tr><td>変換なし（このサーバーが未対応）</td><td>このサーバーでは作れない形式です</td><td>×</td></tr><tr><td>変換できず（元ファイルが無い）</td><td>元の画像のファイルが見つかりません</td><td>×</td></tr><tr><td>変換できず（出力の検証に失敗）</td><td>作ったファイルの確認に失敗しました</td><td>○</td></tr><tr><td>変換できず（エンジンのエラー）</td><td>画像を作る道具でエラーが起きました</td><td>○</td></tr><tr><td>変換できず（書き込み失敗）</td><td>フォルダに書き込めない、空き容量が足りないなど</td><td>○</td></tr><tr><td>変換なし（同名の別の画像があるため）</td><td>変換ファイルと同じ名前の別の画像があるため、上書きを避けました</td><td>×</td></tr><tr><td>変換なし（作る形式がありません）</td><td>作る形式が無い状態です（設定で WebP・AVIF がオフなど）</td><td>—</td></tr></tbody></table>
+<table><thead><tr><th style="width:45%;">表示</th><th>意味</th><th style="width:20%;">一括変換の「以前に失敗した画像も試す」で再試行</th></tr></thead><tbody><tr><td>変換なし（軽くならないため）</td><td>変換すると元より大きくなるため保存しませんでした</td><td>×</td></tr><tr><td>変換なし（アニメーション画像）</td><td>動く GIF・PNG・WebP は変換しません</td><td>×</td></tr><tr><td>変換なし（画素数が上限超過）</td><td>詳細設定の「変換する画像の最大サイズ」を超えています</td><td>×</td></tr><tr><td>変換できず（メモリ不足）</td><td>サーバーのメモリが足りませんでした</td><td>○</td></tr><tr><td>変換なし（sRGB 以外の色設定）</td><td>色の設定を保ったまま変換できないため、色が変わるのを避けました</td><td>×</td></tr><tr><td>変換なし（CMYK 画像）</td><td>印刷用の色の画像は変換しません</td><td>×</td></tr><tr><td>変換なし（劣化なしの設定のため。このプラグインは PNG・GIF の AVIF を劣化なしで作れません）</td><td>「PNG・GIF は劣化なしで変換」がオンのため、PNG・GIF の AVIF は作りません</td><td>×（設定を変えれば対象になります）</td></tr><tr><td>変換なし（劣化なしの設定ですが、このサーバーは劣化なしの WebP を書き出せません）</td><td>サーバーの道具が劣化なしの WebP に対応していません</td><td>×</td></tr><tr><td>変換なし（拡張子と中身が不一致）</td><td>ファイル名の拡張子と中身の形式が違います</td><td>×</td></tr><tr><td>変換なし（画像として読めません）</td><td>画像が壊れているか、大きさがわかりません</td><td>×</td></tr><tr><td>変換できず（読み込み失敗）</td><td>画像を読み込めませんでした</td><td>○</td></tr><tr><td>変換なし（このサーバーが未対応）</td><td>このサーバーでは作れない形式です</td><td>×</td></tr><tr><td>変換できず（元ファイルが無い）</td><td>元の画像のファイルが見つかりません</td><td>×</td></tr><tr><td>変換できず（出力の検証に失敗）</td><td>作ったファイルの確認に失敗しました</td><td>○</td></tr><tr><td>変換できず（エンジンのエラー）</td><td>画像を作る道具でエラーが起きました</td><td>○</td></tr><tr><td>変換できず（書き込み失敗）</td><td>フォルダに書き込めない、空き容量が足りないなど</td><td>○</td></tr><tr><td>変換なし（同名の別の画像があるため）</td><td>変換ファイルと同じ名前の別の画像があるため、上書きを避けました</td><td>×</td></tr><tr><td>変換なし（作る形式がありません）</td><td>作る形式が無い状態です（設定で WebP・AVIF がオフなど）</td><td>—</td></tr></tbody></table>
 </section>
 
         <nav class="page-nav">
@@ -52,7 +53,7 @@
         </nav>
         <footer class="manual-footer">
             <p>作者: <a href="https://www.tsuyoshikashiwazaki.jp/profile/" target="_blank" rel="noopener">柏崎剛（Tsuyoshi Kashiwazaki）</a></p>
-            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.0</p>
+            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.1</p>
         </footer>
     </main>
     <div class="lightbox"></div>

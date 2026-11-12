@@ -309,6 +309,26 @@ if ( ! function_exists( 'kashiwazaki_next_gen_images_uninstall_site' ) ) {
 			kashiwazaki_next_gen_images_uninstall_files( $meta_key );
 		}
 
+		// 画像フォルダの .htaccess に書き足した「種類の指定」を取り除く（他の内容は残す。何も残らなければファイルごと消す）。
+		$uploads = wp_get_upload_dir();
+		if ( ! empty( $uploads['basedir'] ) && empty( $uploads['error'] ) ) {
+			$htaccess = trailingslashit( $uploads['basedir'] ) . '.htaccess';
+			if ( is_file( $htaccess ) ) {
+				$content = file_get_contents( $htaccess ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+				if ( is_string( $content ) && false !== strpos( $content, '# BEGIN Kashiwazaki Next-Gen Images' ) ) {
+					// 目印の行から目印の行までと、その直前の改行 1 つ（書き足したときに入った区切り）を取り除く（目印の行の後ろの改行は残す）。
+					$rest = preg_replace( '/(?:\r?\n)?^[ \t]*# BEGIN Kashiwazaki Next-Gen Images[ \t]*\r?\n.*?^[ \t]*# END Kashiwazaki Next-Gen Images[ \t]*(?=\r?\n|\z)/ms', '', $content );
+					if ( is_string( $rest ) && false === strpos( $rest, '# BEGIN Kashiwazaki Next-Gen Images' ) ) {
+						if ( '' === trim( $rest ) ) {
+							@unlink( $htaccess ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.unlink_unlink
+						} else {
+							file_put_contents( $htaccess, $rest, LOCK_EX ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+						}
+					}
+				}
+			}
+		}
+
 		delete_post_meta_by_key( $meta_key );
 		delete_post_meta_by_key( '_kashiwazaki_next_gen_images_attempts' );
 		delete_option( 'kashiwazaki_next_gen_images_settings' );
@@ -319,6 +339,7 @@ if ( ! function_exists( 'kashiwazaki_next_gen_images_uninstall_site' ) ) {
 		delete_option( 'kashiwazaki_next_gen_images_job_stop' );
 		delete_option( 'kashiwazaki_next_gen_images_stale_variants' );
 		delete_transient( 'kashiwazaki_next_gen_images_stats' );
+		delete_transient( 'kashiwazaki_next_gen_images_stats_v2' );
 		wp_unschedule_hook( 'kashiwazaki_next_gen_images_cron_convert' );
 		wp_unschedule_hook( 'kashiwazaki_next_gen_images_job_cron' );
 

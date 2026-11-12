@@ -21,6 +21,17 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 	const TEST_TRANSIENT = 'kashiwazaki_next_gen_images_engine_test_';
 
 	/**
+	 * cavif（外部の AVIF 変換プログラム）の場所を指定する定数の名前。wp-config.php で定義する
+	 * （定義が無ければ、設定画面の「cavif の場所」を使う。定義があれば、設定画面の値より優先する）。
+	 *
+	 * GD も Imagick も AVIF を書き出せないサーバーで、AVIF を作るための追加の手段。
+	 * ふだんは設定画面で場所を入力する（入力できるのは、プラグインをインストールできる人だけ。Settings::can_set_cavif_path）。
+	 * この定数は、場所をサーバーのファイルで固定したいとき（設定画面から変えられないようにしたいとき）に使う。
+	 * 空文字や false を定義すると、設定画面に場所が保存されていても、cavif を使わない。
+	 */
+	const CAVIF_CONSTANT = 'KASHIWAZAKI_NEXT_GEN_IMAGES_CAVIF';
+
+	/**
 	 * 変換元として扱う MIME タイプ。
 	 */
 	const SOURCE_MIMES = array( 'image/jpeg', 'image/png', 'image/gif', 'image/webp' );
@@ -62,6 +73,15 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 				$sig    .= '|' . ( isset( $version['versionNumber'] ) ? $version['versionNumber'] : '' );
 			} catch ( Throwable $e ) {
 				$sig .= '|imagick-error';
+			}
+		}
+		// cavif の場所が指定されているときだけ、その状態も特徴に含める（指定が無いサイトでは、これまでと同じキーのまま）。
+		// 場所の指定・プログラムの差し替え・権限の変更があれば、別のキーになり、動作確認をやり直す。
+		$cavif = self::cavif_status();
+		if ( $cavif['configured'] ) {
+			$sig .= '|cavif:' . $cavif['path'] . ':' . $cavif['reason'];
+			if ( $cavif['usable'] ) {
+				$sig .= ':' . (int) @filesize( $cavif['path'] ) . ':' . (int) @filemtime( $cavif['path'] ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 			}
 		}
 		return self::TEST_TRANSIENT . substr( md5( $sig ), 0, 12 );
@@ -129,8 +149,9 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 			'webp' => array(),
 			'avif' => array(),
 		);
+		// 並び順が、使う順番になる。cavif（外部プログラム）は、Imagick・GD の後ろ（どちらでも作れないときの手段）。
 		foreach ( array( 'webp', 'avif' ) as $format ) {
-			foreach ( array( 'imagick', 'gd' ) as $engine ) {
+			foreach ( array( 'imagick', 'gd', 'cavif' ) as $engine ) {
 				if ( ! empty( $tests[ $engine ][ $format ] ) ) {
 					$support[ $format ][] = $engine;
 				}
@@ -164,7 +185,7 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 		$support = self::support();
 		$engines = isset( $support[ $format ] ) ? $support[ $format ] : array();
 		$pref    = Kashiwazaki_Next_Gen_Images_Settings::get( 'engine_preference' );
-		if ( in_array( $pref, array( 'gd', 'imagick' ), true ) && in_array( $pref, $engines, true ) ) {
+		if ( in_array( $pref, array( 'gd', 'imagick', 'cavif' ), true ) && in_array( $pref, $engines, true ) ) {
 			// 優先指定したエンジンを先頭にする。もう片方は失敗したときの予備として残す。
 			$engines = array_merge( array( $pref ), array_diff( $engines, array( $pref ) ) );
 		}
@@ -203,6 +224,11 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 			'gd_webp'         => false,
 			'gd_avif'         => false,
 		);
+		$cavif                    = self::cavif_status();
+		$info['cavif_configured'] = $cavif['configured'];
+		$info['cavif_usable']     = $cavif['usable'];
+		$info['cavif_reason']     = $cavif['reason'];
+		$info['cavif_version']    = $cavif['usable'] ? self::cavif_version() : '';
 		if ( $info['imagick_loaded'] ) {
 			try {
 				$formats                 = Imagick::queryFormats();
@@ -238,6 +264,10 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 				'webp' => false,
 				'avif' => false,
 			),
+			'cavif'   => array(
+				'webp' => false, // cavif が書き出せるのは AVIF だけ。
+				'avif' => false,
+			),
 		);
 
 		$dir = get_temp_dir();
@@ -256,15 +286,30 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 			return $results;
 		}
 
-		foreach ( array( 'imagick', 'gd' ) as $engine ) {
+		// cavif は、場所が指定されていて使える状態のときだけ試す（指定が無いサイトでは、外部プログラムを一切起動しない）。
+		$cavif   = self::cavif_status();
+		$engines = $cavif['usable'] ? array( 'imagick', 'gd', 'cavif' ) : array( 'imagick', 'gd' );
+
+		foreach ( $engines as $engine ) {
 			foreach ( array( 'webp', 'avif' ) as $format ) {
+				if ( 'cavif' === $engine && 'avif' !== $format ) {
+					continue;
+				}
 				$dest = $src . '.' . $format . '.tmp';
 				self::register_tmp( $dest );
 				try {
 					$size = getimagesize( $src );
-					$res  = ( 'imagick' === $engine )
-						? self::encode_imagick( $src, 'image/png', $dest, $format, array( 'quality' => 60, 'lossless' => false ) )
-						: self::encode_gd( $src, 'image/png', $dest, $format, array( 'quality' => 60, 'lossless' => false ), $size );
+					$opts = array(
+						'quality'  => 60,
+						'lossless' => false,
+					);
+					if ( 'imagick' === $engine ) {
+						$res = self::encode_imagick( $src, 'image/png', $dest, $format, $opts );
+					} elseif ( 'cavif' === $engine ) {
+						$res = self::encode_cavif( $src, 'image/png', $dest, $format, $opts, $size );
+					} else {
+						$res = self::encode_gd( $src, 'image/png', $dest, $format, $opts, $size );
+					}
 					if ( ! is_wp_error( $res ) && self::verify_output( $dest, $format, 32, 32 ) ) {
 						$results[ $engine ][ $format ] = true;
 					}
@@ -314,6 +359,8 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 			try {
 				if ( 'imagick' === $engine ) {
 					$result = self::encode_imagick( $src, $mime, $dest, $format, $opts );
+				} elseif ( 'cavif' === $engine ) {
+					$result = self::encode_cavif( $src, $mime, $dest, $format, $opts, $size );
 				} else {
 					$result = self::encode_gd( $src, $mime, $dest, $format, $opts, $size );
 				}
@@ -936,6 +983,53 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 		if ( 'avif' === $format && ! function_exists( 'imageavif' ) ) {
 			return new WP_Error( 'unsupported', 'gd avif missing' );
 		}
+
+		$img = self::gd_load_normalized( $src, $mime, $size );
+		if ( is_wp_error( $img ) ) {
+			return $img;
+		}
+
+		$out_w = imagesx( $img );
+		$out_h = imagesy( $img );
+
+		$quality = isset( $opts['quality'] ) ? (int) $opts['quality'] : 80;
+		$ok      = false;
+		if ( 'webp' === $format ) {
+			if ( $gd_lossless ) {
+				$ok = imagewebp( $img, $dest, IMG_WEBP_LOSSLESS );
+			} else {
+				$ok = imagewebp( $img, $dest, $quality );
+			}
+		} else {
+			// speed は大きいほど速く、画質は少し下がる。共用サーバーの時間制限に合わせて速めにする。
+			$ok = imageavif( $img, $dest, $quality, 7 );
+		}
+		imagedestroy( $img );
+
+		if ( ! $ok ) {
+			return new WP_Error( 'engine_error', 'gd could not write the file' );
+		}
+		return array(
+			'width'  => $out_w,
+			'height' => $out_h,
+		);
+	}
+
+	/**
+	 * 画像を GD で読み込み、真のカラー・透明つき・EXIF の向きを反映した形にそろえる。
+	 *
+	 * GD で書き出すとき（encode_gd）と、cavif に渡す画像を作るとき（encode_cavif）の両方で使う。
+	 * GD では色や向きを保てない画像（CMYK・sRGB 以外の色設定・向きを確かめ切れないもの）は読み込まず、理由を返す。
+	 *
+	 * @param string $src  元ファイル。
+	 * @param string $mime MIME。
+	 * @param mixed  $size getimagesize の結果。
+	 * @return resource|GdImage|WP_Error
+	 */
+	private static function gd_load_normalized( $src, $mime, $size ) {
+		if ( ! function_exists( 'imagecreatetruecolor' ) ) {
+			return new WP_Error( 'unsupported', 'gd missing' );
+		}
 		if ( ! is_array( $size ) ) {
 			return new WP_Error( 'corrupt', 'size unknown' );
 		}
@@ -1013,30 +1107,7 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 			imagesavealpha( $img, true );
 		}
 
-		$out_w = imagesx( $img );
-		$out_h = imagesy( $img );
-
-		$quality = isset( $opts['quality'] ) ? (int) $opts['quality'] : 80;
-		$ok      = false;
-		if ( 'webp' === $format ) {
-			if ( $gd_lossless ) {
-				$ok = imagewebp( $img, $dest, IMG_WEBP_LOSSLESS );
-			} else {
-				$ok = imagewebp( $img, $dest, $quality );
-			}
-		} else {
-			// speed は大きいほど速く、画質は少し下がる。共用サーバーの時間制限に合わせて速めにする。
-			$ok = imageavif( $img, $dest, $quality, 7 );
-		}
-		imagedestroy( $img );
-
-		if ( ! $ok ) {
-			return new WP_Error( 'engine_error', 'gd could not write the file' );
-		}
-		return array(
-			'width'  => $out_w,
-			'height' => $out_h,
-		);
+		return $img;
 	}
 
 	/**
@@ -1144,12 +1215,16 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 
 			$im->setImageFormat( $format );
 			$quality = isset( $opts['quality'] ) ? (int) $opts['quality'] : 80;
+			if ( 'webp' === $format && ! empty( $opts['lossless'] ) ) {
+				// 劣化なしでは画質を 100 にする。ImageMagick は画質を near_lossless（劣化なしの前の画素の前処理）にも使うので、
+				// 100 未満だと劣化なしの WebP でも画素が変わる（公式: imagemagick.org/webp/）。
+				$quality = 100;
+			}
 			$im->setImageCompressionQuality( $quality );
 			if ( 'webp' === $format ) {
 				$im->setOption( 'webp:method', '4' );
-				if ( ! empty( $opts['lossless'] ) ) {
-					$im->setOption( 'webp:lossless', 'true' );
-				}
+				// 劣化なしを求めないときも false を明示する（ImageMagick は画質 100 以上だと自動で劣化なしにするため。公式: imagemagick.org/webp/）。
+				$im->setOption( 'webp:lossless', ! empty( $opts['lossless'] ) ? 'true' : 'false' );
 			} else {
 				$im->setOption( 'heic:speed', '7' );
 			}
@@ -1211,6 +1286,361 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 			default:
 				break;
 		}
+	}
+
+	/**
+	 * PHP の関数を呼べるか（定義されていて、php.ini の disable_functions で止められていない）。
+	 *
+	 * @param string $name 関数名。
+	 * @return bool
+	 */
+	private static function function_usable( $name ) {
+		if ( ! function_exists( $name ) ) {
+			return false;
+		}
+		// PHP 8.0 より前は、止められた関数でも function_exists が true を返すので、設定も見る。
+		$disabled = array_map( 'trim', explode( ',', strtolower( (string) ini_get( 'disable_functions' ) ) ) );
+		return ! in_array( strtolower( $name ), $disabled, true );
+	}
+
+	/**
+	 * cavif（外部の AVIF 変換プログラム）を使える状態か調べる。プログラムは起動しない（ファイルと PHP の機能を見るだけ）。
+	 *
+	 * 場所の指定は 2 通り。wp-config.php の定数があれば、それだけを使う（設定画面の値は見ない。定数が空や false なら「使わない」）。
+	 * 定数が無ければ、設定画面の「cavif の場所」の値を使う。
+	 *
+	 * @return array configured(bool 場所が指定されているか)・usable(bool 使えるか)・path(string 実際の場所)・reason(string 使えない理由の符号。使えるときは空文字)・source(string 指定の出どころ。constant|setting。未指定は空文字)。
+	 */
+	public static function cavif_status() {
+		$out = array(
+			'configured' => false,
+			'usable'     => false,
+			'path'       => '',
+			'reason'     => 'not_configured',
+			'source'     => '',
+		);
+		if ( defined( self::CAVIF_CONSTANT ) ) {
+			$path   = constant( self::CAVIF_CONSTANT );
+			$source = 'constant';
+		} else {
+			$path   = Kashiwazaki_Next_Gen_Images_Settings::get( 'cavif_path' );
+			$source = 'setting';
+		}
+		if ( ! is_string( $path ) || '' === $path ) {
+			return $out;
+		}
+		$out['configured'] = true;
+		$out['path']       = $path;
+		$out['source']     = $source;
+
+		// 絶対パスだけを受け付ける（相対パス・URL やストリームの形は使わない）。
+		$windows  = ( '\\' === DIRECTORY_SEPARATOR );
+		$absolute = ( '/' === $path[0] ) || ( $windows && 1 === preg_match( '#^[A-Za-z]:[\\\\/]#', $path ) );
+		if ( ! $absolute || false !== strpos( $path, "\0" ) || false !== strpos( $path, '://' ) ) {
+			$out['reason'] = 'not_absolute';
+			return $out;
+		}
+		// シェルを通さずに起動する方法（proc_open に配列を渡す）は PHP 7.4 から。
+		if ( PHP_VERSION_ID < 70400 ) {
+			$out['reason'] = 'php';
+			return $out;
+		}
+
+		clearstatcache( true, $path );
+		$real = realpath( $path );
+		if ( false === $real || ! is_file( $real ) ) {
+			$out['reason'] = 'not_found';
+			return $out;
+		}
+		$out['path'] = $real;
+		// 設定画面で指定した場所は、ファイル名が「cavif」で始まるものだけを受け付ける
+		// （保存された値を書き換えられても、別の名前のプログラムを動かさないため）。シンボリックリンクは、リンク先の名前で確かめる。
+		// wp-config.php での指定には、この制限は無い（これまでと同じ）。
+		if ( 'setting' === $source && 1 !== preg_match( '/^cavif[A-Za-z0-9._-]*$/i', basename( $real ) ) ) {
+			$out['reason'] = 'not_cavif_name';
+			return $out;
+		}
+		if ( ! is_executable( $real ) ) {
+			$out['reason'] = 'not_executable';
+			return $out;
+		}
+		if ( ! $windows ) {
+			// 所有者以外が書き換えられるプログラム・フォルダは使わない（共用サーバーで、差し替えられたプログラムを動かさないため）。
+			// フォルダは、スティッキービット付き（他人のファイルを消したり置き換えたりできない設定）なら、書き込み可でもよい。
+			$perms     = @fileperms( $real ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			$dir_perms = @fileperms( dirname( $real ) ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			if ( false === $perms || ( $perms & 0022 ) || false === $dir_perms || ( ( $dir_perms & 0022 ) && ! ( $dir_perms & 01000 ) ) ) {
+				$out['reason'] = 'unsafe_permissions';
+				return $out;
+			}
+		}
+		foreach ( array( 'proc_open', 'proc_get_status', 'proc_terminate', 'proc_close' ) as $fn ) {
+			if ( ! self::function_usable( $fn ) ) {
+				$out['reason'] = 'proc_open';
+				return $out;
+			}
+		}
+		// cavif に渡す画像は、GD で読み込んで用意する。
+		if ( ! function_exists( 'imagecreatetruecolor' ) || ! function_exists( 'imagepng' ) ) {
+			$out['reason'] = 'gd_missing';
+			return $out;
+		}
+
+		$out['usable'] = true;
+		$out['reason'] = '';
+		return $out;
+	}
+
+	/**
+	 * cavif に渡す環境変数。cavif が作るスレッドの数を絞る。
+	 *
+	 * cavif は、並列処理のライブラリ（Rayon）の既定に従って、起動時に「サーバーの CPU の数だけ」スレッドを作る。
+	 * 「--threads」は変換に使う数を決めるだけで、この既定のスレッドは減らない
+	 * （128 コアのサーバーで実測: 「--threads 2」だけでは 131 本、RAYON_NUM_THREADS=2 を足すと 5 本。変換の結果と速さは同じ）。
+	 * スレッドは、サーバーが利用者ごとに数えるプロセスの数に含まれる。多いと、同じアカウントの CGI のプログラムが、
+	 * 変換のあいだ起動できなくなる（プロセス数の上限）。
+	 * Rayon の公式ドキュメント（ThreadPoolBuilder::num_threads）: 既定の数は「RAYON_NUM_THREADS 環境変数（あれば）、
+	 * 無ければ論理 CPU の数」で決まる。
+	 *
+	 * @param int $threads 使う数。
+	 * @return string[]
+	 */
+	private static function cavif_env( $threads ) {
+		return array( 'RAYON_NUM_THREADS' => (string) max( 1, (int) $threads ) );
+	}
+
+	/**
+	 * cavif のバージョン表示（診断画面用）。プログラムを起動する。使えないとき・読み取れないときは空文字。
+	 *
+	 * @return string
+	 */
+	public static function cavif_version() {
+		$status = self::cavif_status();
+		if ( ! $status['usable'] ) {
+			return '';
+		}
+		$run = self::run_process( array( $status['path'], '--version' ), 5.0, self::cavif_env( 1 ) );
+		if ( is_wp_error( $run ) || $run['timed_out'] || 0 !== $run['code'] ) {
+			return '';
+		}
+		// 「cavif-rs 1.8.0」の形だけを表示に使う（別のプログラムの出力を、そのまま画面に出さない）。
+		$line = self::process_message( $run['output'] );
+		return ( 1 === preg_match( '/^cavif[A-Za-z0-9_\-]* [0-9][A-Za-z0-9.\-]{0,20}$/', $line ) ) ? $line : '';
+	}
+
+	/**
+	 * cavif（外部プログラム）で AVIF に変換する。
+	 *
+	 * 画像の読み込みと、色・向きの確認は、GD と同じ手順で行う（gd_load_normalized）。
+	 * そうして用意した画像を、劣化のない PNG の中間ファイルにして cavif に渡す。
+	 * cavif には元のファイルを直接渡さないので、元のファイル名や中身の細かな違いが、プログラムの動きに影響しない。
+	 *
+	 * @param string $src    元ファイル。
+	 * @param string $mime   MIME。
+	 * @param string $dest   書き出し先。
+	 * @param string $format avif だけ。
+	 * @param array  $opts   オプション。
+	 * @param mixed  $size   getimagesize の結果。
+	 * @return array|WP_Error
+	 */
+	private static function encode_cavif( $src, $mime, $dest, $format, array $opts, $size ) {
+		if ( 'avif' !== $format ) {
+			return new WP_Error( 'unsupported', 'cavif writes avif only' );
+		}
+		$status = self::cavif_status();
+		if ( ! $status['usable'] ) {
+			return new WP_Error( 'unsupported', 'cavif is not available (' . $status['reason'] . ')' );
+		}
+		// 書き出し先は絶対パスだけ（「-」で始まる文字列が、プログラムの指定として読まれないようにする）。
+		if ( ! is_string( $dest ) || '' === $dest || ( '/' !== $dest[0] && 1 !== preg_match( '#^[A-Za-z]:[\\\\/]#', $dest ) ) ) {
+			return new WP_Error( 'engine_error', 'cavif: destination must be an absolute path' );
+		}
+
+		$img = self::gd_load_normalized( $src, $mime, $size );
+		if ( is_wp_error( $img ) ) {
+			return $img;
+		}
+		$out_w = imagesx( $img );
+		$out_h = imagesy( $img );
+
+		// cavif に渡す中間ファイル。書き出し先と同じフォルダに、一時ファイルの名前で置く（別の場所に画像の写しを作らない）。
+		$png = self::sibling_tmp( $dest );
+		self::register_tmp( $png );
+		$ok = imagepng( $img, $png, 1 ); // 圧縮は最小限（すぐ消す中間ファイルなので、大きさより速さを優先する）。
+		imagedestroy( $img );
+		if ( ! $ok ) {
+			self::remove_tmp( $png );
+			return new WP_Error( 'engine_error', 'cavif: could not write the intermediate image' );
+		}
+
+		$quality = max( 1, min( 100, isset( $opts['quality'] ) ? (int) $opts['quality'] : 60 ) );
+		// 使う CPU の数。cavif の既定は「サーバーの CPU の数だけ」で、共用サーバーでは他の利用者の迷惑になるので、少なく絞る。
+		// 「--threads」だけでは、変換に使う数は減るが、cavif が起動時に作るスレッドは CPU の数だけ残る（cavif_env の説明）。両方で絞る。
+		$threads = max( 1, min( 64, (int) apply_filters( 'kashiwazaki_next_gen_images_cavif_threads', 2 ) ) );
+		// 速さ（1 = 遅いが小さい 〜 10 = 速いが粗い）。共用サーバーの時間制限に合わせて、既定（4）より少し速めにする。
+		$speed = max( 1, min( 10, (int) apply_filters( 'kashiwazaki_next_gen_images_cavif_speed', 6 ) ) );
+		// 1 枚にかけてよい秒数。超えたら止めて、失敗として扱う（止まったままのプログラムを残さない）。
+		// 画面からの処理は、サーバーが応答を待つ時間に収まるよう短めに。コマンドライン（WP-CLI）には待ち時間の制限が無いので長めにする。
+		$timeout = max( 1.0, min( 600.0, (float) apply_filters( 'kashiwazaki_next_gen_images_cavif_timeout', ( 'cli' === PHP_SAPI ) ? 300 : 60 ) ) );
+
+		$run = self::run_process(
+			array(
+				$status['path'],
+				'--overwrite',
+				'--threads',
+				(string) $threads,
+				'--quality',
+				(string) $quality,
+				'--speed',
+				(string) $speed,
+				'--depth',
+				'8', // GD・Imagick の出力と同じ 8 ビットにそろえる。
+				'-o',
+				$dest,
+				'--',
+				$png,
+			),
+			$timeout,
+			self::cavif_env( $threads )
+		);
+		self::remove_tmp( $png );
+
+		if ( is_wp_error( $run ) ) {
+			return new WP_Error( 'engine_error', 'cavif: ' . $run->get_error_message() );
+		}
+		if ( $run['timed_out'] ) {
+			return new WP_Error( 'engine_error', 'cavif: timed out' );
+		}
+		if ( 0 !== $run['code'] ) {
+			return new WP_Error( 'engine_error', trim( 'cavif: exit code ' . $run['code'] . ' ' . self::process_message( $run['output'] ) ) );
+		}
+		return array(
+			'width'  => $out_w,
+			'height' => $out_h,
+		);
+	}
+
+	/**
+	 * 書き出し先と同じフォルダに置く、別の一時ファイルの名前を作る。
+	 *
+	 * @param string $dest 書き出し先（一時ファイル）。
+	 * @return string
+	 */
+	private static function sibling_tmp( $dest ) {
+		do {
+			$rand = wp_generate_password( 8, false );
+			// 変換の本体が決めた形「〜.(webp|avif).(8 文字).tmp」のときは、同じ形の別の名前にする。
+			// 途中で強制終了されて残っても、変換の本体の「古い一時ファイルの片付け」の対象になる。
+			if ( 1 === preg_match( '/^(.*\.(?:webp|avif))\.[A-Za-z0-9]{8}\.tmp$/s', $dest, $m ) ) {
+				$path = $m[1] . '.' . $rand . '.tmp';
+			} else {
+				$path = $dest . '.' . $rand . '.tmp';
+			}
+		} while ( $path === $dest || file_exists( $path ) );
+		return $path;
+	}
+
+	/**
+	 * 外部プログラムを、シェルを通さずに実行する。時間を超えたら止める。
+	 *
+	 * @param string[] $command 実行ファイルの絶対パスと、その引数。
+	 * @param float    $timeout 待つ秒数。
+	 * @param string[] $env     プログラムに渡す環境変数（名前 => 値）。Windows では渡さない（下の説明）。
+	 * @return array|WP_Error code(int 終了コード)・output(string 出力の先頭部分)・timed_out(bool 時間切れで止めたか)。起動できなかったときは WP_Error。
+	 */
+	private static function run_process( array $command, $timeout, array $env = array() ) {
+		$windows = ( '\\' === DIRECTORY_SEPARATOR );
+		$null    = $windows ? 'NUL' : '/dev/null';
+		// Windows では、パイプを「待たずに読む」ことができないので、出力は読まずに捨てる。
+		$spec  = array(
+			0 => array( 'file', $null, 'r' ),
+			1 => $windows ? array( 'file', $null, 'w' ) : array( 'pipe', 'w' ),
+			2 => $windows ? array( 'file', $null, 'w' ) : array( 'pipe', 'w' ),
+		);
+		$pipes = array();
+		// 配列で渡すと、シェルを通さずに直接起動される（PHP マニュアル proc_open: PHP 7.4.0 以降）。引数の区切りや引用の解釈が入らない。
+		// 環境変数は引き継がず、ここで決めたものだけを渡す（PHP マニュアル proc_open: env_vars に配列を渡すと、それがプログラムの環境変数になる）。
+		// Windows は、起動に必要な変数があるので、そのまま引き継ぐ（追加の環境変数は渡さない）。
+		$proc = @proc_open( $command, $spec, $pipes, null, $windows ? null : array_merge( $env, array( 'LC_ALL' => 'C' ) ) ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.PHP.DiscouragedPHPFunctions.system_calls_proc_open
+		if ( ! is_resource( $proc ) ) {
+			return new WP_Error( 'engine_error', 'could not start the program' );
+		}
+		foreach ( $pipes as $pipe ) {
+			stream_set_blocking( $pipe, false );
+		}
+
+		$output    = '';
+		$code      = -1;
+		$timed_out = false;
+		$start     = microtime( true );
+		while ( true ) {
+			$output = self::drain_pipes( $pipes, $output );
+			$status = proc_get_status( $proc );
+			if ( empty( $status['running'] ) ) {
+				// 終了コードは、終了を最初に確認した呼び出しでしか得られない（PHP マニュアル proc_get_status: PHP 8.3.0 より前）。
+				$code = isset( $status['exitcode'] ) ? (int) $status['exitcode'] : -1;
+				break;
+			}
+			if ( ( microtime( true ) - $start ) >= $timeout ) {
+				$timed_out = true;
+				proc_terminate( $proc, 9 ); // 強制終了（SIGKILL）。すぐに戻ってくるので、終わるのを下で待つ。
+				for ( $i = 0; $i < 250; $i++ ) {
+					usleep( 20000 );
+					$status = proc_get_status( $proc );
+					if ( empty( $status['running'] ) ) {
+						break;
+					}
+				}
+				break;
+			}
+			usleep( 20000 );
+		}
+		$output = self::drain_pipes( $pipes, $output );
+		foreach ( $pipes as $pipe ) {
+			fclose( $pipe ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+		}
+		proc_close( $proc );
+
+		return array(
+			'code'      => $code,
+			'output'    => $output,
+			'timed_out' => $timed_out,
+		);
+	}
+
+	/**
+	 * 外部プログラムの出力を、待たずに読めるだけ読む。先頭の 2KB だけを残し、あとは読み捨てる（相手を待たせないため）。
+	 *
+	 * @param resource[] $pipes  出力のパイプ。
+	 * @param string     $output これまでに読んだ出力。
+	 * @return string
+	 */
+	private static function drain_pipes( array $pipes, $output ) {
+		foreach ( $pipes as $pipe ) {
+			for ( $i = 0; $i < 64; $i++ ) {
+				$chunk = fread( $pipe, 8192 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread
+				if ( ! is_string( $chunk ) || '' === $chunk ) {
+					break;
+				}
+				if ( strlen( $output ) < 2048 ) {
+					$output .= $chunk;
+				}
+			}
+		}
+		return $output;
+	}
+
+	/**
+	 * 外部プログラムの出力を、記録・表示用の短い 1 行にする（制御文字を除き、長さを切る）。
+	 *
+	 * @param string $output 出力。
+	 * @return string
+	 */
+	private static function process_message( $output ) {
+		$text = wp_check_invalid_utf8( (string) $output );
+		$text = (string) preg_replace( '/[\x00-\x1F\x7F]+/', ' ', $text );
+		$text = trim( (string) preg_replace( '/\s+/', ' ', $text ) );
+		return function_exists( 'mb_substr' ) ? mb_substr( $text, 0, 200 ) : substr( $text, 0, 200 );
 	}
 
 	/**

@@ -19,6 +19,11 @@ final class Kashiwazaki_Next_Gen_Images_Admin {
 	const MENU_TITLE   = 'Kashiwazaki Next-Gen Images';
 
 	/**
+	 * 画像フォルダの .htaccess に書き足す区画の名前（# BEGIN 〜 / # END 〜 の目印）。
+	 */
+	const HTACCESS_MARKER = 'Kashiwazaki Next-Gen Images';
+
+	/**
 	 * 管理画面のフックを登録する。
 	 *
 	 * @return void
@@ -36,6 +41,8 @@ final class Kashiwazaki_Next_Gen_Images_Admin {
 		add_action( 'wp_ajax_' . self::AJAX_PREFIX . 'job_status', array( __CLASS__, 'ajax_job_status' ) );
 		add_action( 'admin_notices', array( __CLASS__, 'render_job_notice' ) );
 		add_action( 'wp_ajax_' . self::AJAX_PREFIX . 'mime_test', array( __CLASS__, 'ajax_mime_test' ) );
+		add_action( 'wp_ajax_' . self::AJAX_PREFIX . 'mime_fix', array( __CLASS__, 'ajax_mime_fix' ) );
+		add_action( 'wp_ajax_' . self::AJAX_PREFIX . 'mime_unfix', array( __CLASS__, 'ajax_mime_unfix' ) );
 		add_action( 'wp_ajax_' . self::AJAX_PREFIX . 'engine_test', array( __CLASS__, 'ajax_engine_test' ) );
 		add_filter( 'manage_media_columns', array( __CLASS__, 'add_media_column' ) );
 		add_action( 'manage_media_custom_column', array( __CLASS__, 'render_media_column' ), 10, 2 );
@@ -277,7 +284,7 @@ final class Kashiwazaki_Next_Gen_Images_Admin {
 		self::ui_card_open( __( '画質と軽さ', 'wp-plugin-kashiwazaki-next-gen-images' ), __( '数字が大きいほどきれいで、ファイルも大きくなります', 'wp-plugin-kashiwazaki-next-gen-images' ), 'image-filter' );
 		self::ui_range_row( 'webp_quality', __( 'WebP の画質', 'wp-plugin-kashiwazaki-next-gen-images' ), $s['webp_quality'], 1, 100, __( '1〜100。80 前後が目安です。', 'wp-plugin-kashiwazaki-next-gen-images' ) );
 		self::ui_range_row( 'avif_quality', __( 'AVIF の画質', 'wp-plugin-kashiwazaki-next-gen-images' ), $s['avif_quality'], 1, 100, __( '1〜100。AVIF は低めの数字でもきれいです。60 前後が目安です。', 'wp-plugin-kashiwazaki-next-gen-images' ) );
-		self::ui_switch_row( 'png_lossless', __( 'PNG・GIF は劣化なしで変換', 'wp-plugin-kashiwazaki-next-gen-images' ), $s['png_lossless'], __( 'ロゴ・図・スクリーンショットの文字や線が崩れません。写真の PNG では、あまり軽くならないことがあります。AVIF は劣化なしで作れないため、この設定のときは PNG・GIF の AVIF を作らず、WebP だけにします。', 'wp-plugin-kashiwazaki-next-gen-images' ) );
+		self::ui_switch_row( 'png_lossless', __( 'PNG・GIF は劣化なしで変換', 'wp-plugin-kashiwazaki-next-gen-images' ), $s['png_lossless'], __( 'ロゴ・図・スクリーンショットの文字や線が崩れません。写真の PNG では、あまり軽くならないことがあります。このプラグインは PNG・GIF の AVIF を劣化なしで作れないため、この設定のときは PNG・GIF の AVIF を作らず、WebP だけにします。切り替えたあとは「一括変換」タブで「一括変換を開始」を押すと、すでにある画像にも反映されます（「すべて作り直す」は不要です）。', 'wp-plugin-kashiwazaki-next-gen-images' ) );
 		self::ui_switch_row( 'only_if_smaller', __( '軽くならなければ保存しない', 'wp-plugin-kashiwazaki-next-gen-images' ), $s['only_if_smaller'], __( '変換後のファイルが元より大きい・同じなら捨てて、元の画像のまま表示します。', 'wp-plugin-kashiwazaki-next-gen-images' ) );
 		self::ui_card_close();
 
@@ -327,10 +334,29 @@ final class Kashiwazaki_Next_Gen_Images_Admin {
 			'auto'    => __( '自動（おすすめ）', 'wp-plugin-kashiwazaki-next-gen-images' ),
 			'gd'      => 'GD',
 			'imagick' => 'Imagick',
+			'cavif'   => __( 'cavif（外部プログラム・AVIF のみ）', 'wp-plugin-kashiwazaki-next-gen-images' ),
 		) as $value => $label ) {
 			printf( '<option value="%1$s" %2$s>%3$s</option>', esc_attr( $value ), selected( $s['engine_preference'], $value, false ), esc_html( $label ) );
 		}
 		echo '</select>';
+		self::ui_row_close();
+
+		// cavif（外部の AVIF 変換プログラム）の場所。wp-config.php で指定されているとき・変える権限が無いときは、表示だけにする。
+		$cavif_locked  = defined( Kashiwazaki_Next_Gen_Images_Engine::CAVIF_CONSTANT );
+		$cavif_allowed = Kashiwazaki_Next_Gen_Images_Settings::can_set_cavif_path();
+		$cavif_status  = Kashiwazaki_Next_Gen_Images_Engine::cavif_status();
+		$cavif_value   = $cavif_locked ? ( $cavif_status['configured'] ? (string) constant( Kashiwazaki_Next_Gen_Images_Engine::CAVIF_CONSTANT ) : '' ) : (string) $s['cavif_path'];
+		self::ui_row_open( 'cavif_path', __( 'cavif の場所', 'wp-plugin-kashiwazaki-next-gen-images' ), __( 'サーバーの PHP が AVIF を作れないときに使う、変換プログラム「cavif」の場所です。cavif のファイルをサーバーに置き、その場所を入力して保存します。空欄なら使いません（外部のプログラムは実行しません）。', 'wp-plugin-kashiwazaki-next-gen-images' ) );
+		echo '<div class="kashiwazaki-next-gen-images-pathfield">';
+		printf(
+			'<input type="text" id="kashiwazaki-next-gen-images-field-cavif_path" name="%1$s[cavif_path]" value="%2$s" class="large-text code" placeholder="%3$s" spellcheck="false" autocomplete="off" %4$s>',
+			esc_attr( $opt ),
+			esc_attr( $cavif_value ),
+			esc_attr__( '例: /home/アカウント名/bin/cavif', 'wp-plugin-kashiwazaki-next-gen-images' ),
+			disabled( $cavif_locked || ! $cavif_allowed, true, false )
+		);
+		self::render_cavif_field_note( $cavif_locked, $cavif_allowed, $cavif_status );
+		echo '</div>';
 		self::ui_row_close();
 
 		self::ui_range_row( 'max_megapixels', __( '変換する画像の最大サイズ', 'wp-plugin-kashiwazaki-next-gen-images' ), $s['max_megapixels'], 1, 200, __( '単位は百万画素。これを超える巨大な画像は、サーバーのメモリ不足を避けるため変換しません。共用レンタルサーバーでは 30 前後が安全です。', 'wp-plugin-kashiwazaki-next-gen-images' ), __( '小さい', 'wp-plugin-kashiwazaki-next-gen-images' ), __( '大きい', 'wp-plugin-kashiwazaki-next-gen-images' ), ' ' . __( '百万画素', 'wp-plugin-kashiwazaki-next-gen-images' ) );
@@ -558,7 +584,82 @@ final class Kashiwazaki_Next_Gen_Images_Admin {
 	 * @return string
 	 */
 	private static function engine_label( $engine ) {
+		if ( 'cavif' === $engine ) {
+			return 'cavif';
+		}
 		return ( 'imagick' === $engine ) ? 'Imagick' : 'GD';
+	}
+
+	/**
+	 * 設定タブの「cavif の場所」の欄の下に出す説明（いまの状態と、入力できない理由）。
+	 *
+	 * @param bool  $locked  wp-config.php で指定されているか（そのときは、この欄では変えられない）。
+	 * @param bool  $allowed いまの利用者が、この欄を変えられるか。
+	 * @param array $status  Engine::cavif_status() の結果。
+	 * @return void
+	 */
+	private static function render_cavif_field_note( $locked, $allowed, array $status ) {
+		$lines = array();
+		if ( $locked ) {
+			$lines[] = $status['configured']
+				? __( 'wp-config.php で指定されているため、ここでは変更できません。', 'wp-plugin-kashiwazaki-next-gen-images' )
+				: __( 'wp-config.php で、cavif を使わない設定になっています。ここでは変更できません。', 'wp-plugin-kashiwazaki-next-gen-images' );
+		} elseif ( ! $allowed ) {
+			$lines[] = __( 'この欄を変更できるのは、プラグインをインストールできる管理者だけです。', 'wp-plugin-kashiwazaki-next-gen-images' );
+		}
+
+		$state = '';
+		if ( $status['configured'] ) {
+			// 動作確認（試しの変換）の結果まで見て、使えるかどうかを出す。
+			$info  = Kashiwazaki_Next_Gen_Images_Engine::library_info();
+			$tests = Kashiwazaki_Next_Gen_Images_Engine::test_results();
+			$note  = self::cavif_note( $info, $tests );
+			if ( ! empty( $info['cavif_usable'] ) && ! empty( $tests['cavif']['avif'] ) ) {
+				$state = '<span class="kashiwazaki-next-gen-images-badge kashiwazaki-next-gen-images-badge-ok">' . esc_html__( '使えます', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</span> ' . esc_html( $note );
+			} else {
+				$state = '<span class="kashiwazaki-next-gen-images-badge kashiwazaki-next-gen-images-badge-ng">' . esc_html__( '使えません', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</span> ' . esc_html( preg_replace( '/^使えません[:：。]\s*/u', '', $note ) );
+			}
+		} elseif ( ! $locked && $allowed ) {
+			$lines[] = __( '空欄のときは、cavif を使いません。', 'wp-plugin-kashiwazaki-next-gen-images' );
+		}
+
+		if ( '' !== $state ) {
+			echo '<p class="kashiwazaki-next-gen-images-hint">' . $state . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 上でエスケープ済み。
+		}
+		foreach ( $lines as $line ) {
+			echo '<p class="kashiwazaki-next-gen-images-hint">' . esc_html( $line ) . '</p>';
+		}
+	}
+
+	/**
+	 * 診断タブに出す、cavif（外部の AVIF 変換プログラム）の状態の説明。
+	 *
+	 * @param array $info  Engine::library_info() の結果。
+	 * @param array $tests Engine::test_results() の結果。
+	 * @return string
+	 */
+	private static function cavif_note( array $info, array $tests ) {
+		if ( empty( $info['cavif_configured'] ) ) {
+			return __( '未設定（GD・Imagick で AVIF を作れないサーバー向けの、追加の手段です）', 'wp-plugin-kashiwazaki-next-gen-images' );
+		}
+		if ( ! empty( $info['cavif_usable'] ) ) {
+			if ( empty( $tests['cavif']['avif'] ) ) {
+				return __( '場所は指定されていますが、試しの変換に失敗しました。指定したファイルが cavif かどうかを確認してください。', 'wp-plugin-kashiwazaki-next-gen-images' );
+			}
+			return ( isset( $info['cavif_version'] ) && '' !== $info['cavif_version'] ) ? $info['cavif_version'] : __( '設定済み', 'wp-plugin-kashiwazaki-next-gen-images' );
+		}
+		$reasons = array(
+			'not_absolute'       => __( '使えません: 場所は「/」から始まる絶対パスで指定してください。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+			'php'                => __( '使えません: PHP 7.4 以上が必要です。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+			'not_found'          => __( '使えません: 指定した場所にファイルがありません。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+			'not_cavif_name'     => __( '使えません: ファイル名が「cavif」で始まるファイルを指定してください。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+			'not_executable'     => __( '使えません: ファイルを実行できません。実行権限を確認してください。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+			'unsafe_permissions' => __( '使えません: 所有者以外が書き換えられる状態です。ファイルと、それを置いたフォルダの権限を 755 か 700 にしてください。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+			'proc_open'          => __( '使えません: このサーバーの PHP では、外部プログラムを実行できません（proc_open が無効）。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+			'gd_missing'         => __( '使えません: 画像の読み込みに GD が必要です。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+		);
+		$reason  = isset( $info['cavif_reason'] ) ? (string) $info['cavif_reason'] : '';
+		return isset( $reasons[ $reason ] ) ? $reasons[ $reason ] : __( '使えません。', 'wp-plugin-kashiwazaki-next-gen-images' );
 	}
 
 	/**
@@ -583,21 +684,28 @@ final class Kashiwazaki_Next_Gen_Images_Admin {
 		echo '<header class="kashiwazaki-next-gen-images-card-head"><span class="dashicons dashicons-images-alt2" aria-hidden="true"></span><div><h2 class="kashiwazaki-next-gen-images-card-title">' . esc_html__( '既存の画像を一括変換', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</h2><p class="kashiwazaki-next-gen-images-card-sub">' . esc_html__( 'メディアライブラリの画像を、1 枚ずつ順番に変換します', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</p></div></header>';
 		echo '<div class="kashiwazaki-next-gen-images-card-body">';
 
-		$pending = max( 0, (int) $stats['images'] - (int) $stats['attachments'] );
+		// 「処理が必要」は、一括変換の対象と同じ規則（needs_work）で数えた数。未変換の画像に加えて、設定の切り替えで AVIF の作成・片付けが要る画像、
+		// 変換ファイルが消えた画像、元画像が差し替わった画像も入る。画像が多くて数えきれなかったときは null。
+		$needs = ( array_key_exists( 'needs', $stats ) && null !== $stats['needs'] ) ? (int) $stats['needs'] : null;
 		echo '<div class="kashiwazaki-next-gen-images-stats">';
 		foreach ( array(
-			array( (int) $stats['images'], __( '画像の総数', 'wp-plugin-kashiwazaki-next-gen-images' ) ),
-			array( (int) $stats['attachments'], __( '変換済み', 'wp-plugin-kashiwazaki-next-gen-images' ) ),
-			array( $pending, __( '未変換（目安）', 'wp-plugin-kashiwazaki-next-gen-images' ) ),
+			array( number_format_i18n( (int) $stats['images'] ), __( '画像の総数', 'wp-plugin-kashiwazaki-next-gen-images' ) ),
+			array( number_format_i18n( (int) $stats['attachments'] ), __( '変換済み', 'wp-plugin-kashiwazaki-next-gen-images' ) ),
+			array( null === $needs ? '—' : number_format_i18n( $needs ), __( '処理が必要', 'wp-plugin-kashiwazaki-next-gen-images' ) ),
 		) as $stat ) {
-			echo '<div class="kashiwazaki-next-gen-images-stat"><strong>' . esc_html( number_format_i18n( $stat[0] ) ) . '</strong><span>' . esc_html( $stat[1] ) . '</span></div>';
+			echo '<div class="kashiwazaki-next-gen-images-stat"><strong>' . esc_html( $stat[0] ) . '</strong><span>' . esc_html( $stat[1] ) . '</span></div>';
 		}
 		echo '</div>';
+		if ( null === $needs ) {
+			echo '<p class="description">' . esc_html__( '処理が必要な画像の数を、時間内に調べきれませんでした（画像が多い・サーバーが混んでいる など）。「一括変換を開始」を押すと、必要な画像だけを処理します。', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</p>';
+		} elseif ( $needs > 0 && 'running' !== $state ) {
+			echo '<p class="description">' . esc_html__( '処理が必要な画像があります。「一括変換を開始」を押すと、必要な画像だけを処理します（設定を切り替えたあとの作成・片付けも含みます）。', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</p>';
+		}
 
 		// 開始前のオプション（実行中は変えられない）。
 		echo '<div class="kashiwazaki-next-gen-images-row"><div class="kashiwazaki-next-gen-images-row-label"><label for="kashiwazaki-next-gen-images-retry">' . esc_html__( '以前に失敗した画像も試す', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</label>' . self::ui_tip( 'kashiwazaki-next-gen-images-tip-retry', __( '前回うまく変換できなかった画像を、もう一度試します。', 'wp-plugin-kashiwazaki-next-gen-images' ) ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '<div class="kashiwazaki-next-gen-images-row-control"><label class="kashiwazaki-next-gen-images-switch"><input type="checkbox" id="kashiwazaki-next-gen-images-retry"><span class="kashiwazaki-next-gen-images-switch-track" aria-hidden="true"></span></label></div></div>';
-		echo '<div class="kashiwazaki-next-gen-images-row"><div class="kashiwazaki-next-gen-images-row-label"><label for="kashiwazaki-next-gen-images-force">' . esc_html__( 'すべて作り直す', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</label>' . self::ui_tip( 'kashiwazaki-next-gen-images-tip-force', __( '変換済みの画像も含めて、すべて作り直します。画質などの設定を変えたあとに使います。', 'wp-plugin-kashiwazaki-next-gen-images' ) ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<div class="kashiwazaki-next-gen-images-row"><div class="kashiwazaki-next-gen-images-row-label"><label for="kashiwazaki-next-gen-images-force">' . esc_html__( 'すべて作り直す', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</label>' . self::ui_tip( 'kashiwazaki-next-gen-images-tip-force', __( '変換済みの画像も含めて、すべて作り直します。画質を変えたあとに使います（「PNG・GIF は劣化なしで変換」の切り替えや、未変換の画像の変換には不要です）。', 'wp-plugin-kashiwazaki-next-gen-images' ) ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '<div class="kashiwazaki-next-gen-images-row-control"><label class="kashiwazaki-next-gen-images-switch"><input type="checkbox" id="kashiwazaki-next-gen-images-force"><span class="kashiwazaki-next-gen-images-switch-track" aria-hidden="true"></span></label></div></div>';
 
 		$running = ( 'running' === $state );
@@ -647,13 +755,16 @@ final class Kashiwazaki_Next_Gen_Images_Admin {
 
 		// 変換エンジン。
 		echo '<div class="kashiwazaki-next-gen-images-box"><h2>' . esc_html__( '変換エンジン（このサーバーの対応状況）', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</h2>';
-		echo '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'ライブラリ', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</th><th>WebP</th><th>AVIF</th><th>' . esc_html__( '備考', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</th></tr></thead><tbody>';
+		echo '<table class="widefat striped kashiwazaki-next-gen-images-engines"><thead><tr><th>' . esc_html__( 'ライブラリ', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</th><th>WebP</th><th>AVIF</th><th>' . esc_html__( '備考', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</th></tr></thead><tbody>';
 		echo '<tr><td>GD</td><td>' . ( ! empty( $tests['gd']['webp'] ) ? $yes : $no ) . '</td><td>' . ( ! empty( $tests['gd']['avif'] ) ? $yes : $no ) . '</td><td>' . esc_html( $info['gd_loaded'] ? $info['gd_version'] : __( '未導入', 'wp-plugin-kashiwazaki-next-gen-images' ) ) . '</td></tr>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '<tr><td>Imagick</td><td>' . ( ! empty( $tests['imagick']['webp'] ) ? $yes : $no ) . '</td><td>' . ( ! empty( $tests['imagick']['avif'] ) ? $yes : $no ) . '</td><td>' . esc_html( $info['imagick_loaded'] ? $info['imagick_version'] : __( '未導入', 'wp-plugin-kashiwazaki-next-gen-images' ) ) . '</td></tr>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		// cavif（外部プログラム）。書き出せるのは AVIF だけなので、WebP の欄は「対象外」。
+		$dash = '<span aria-hidden="true">—</span><span class="screen-reader-text">' . esc_html__( '対象外', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</span>';
+		echo '<tr><td>' . esc_html__( 'cavif（外部プログラム）', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</td><td>' . $dash . '</td><td>' . ( ! empty( $tests['cavif']['avif'] ) ? $yes : $no ) . '</td><td>' . esc_html( self::cavif_note( $info, $tests ) ) . '</td></tr>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '</tbody></table>';
 		echo '<p class="description">' . esc_html__( '「利用可」は、実際に小さな画像を書き出せたことを確認した結果です（ライブラリが入っているだけでは「利用可」になりません）。', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</p>';
 		if ( empty( $support['avif'] ) ) {
-			echo '<p class="description">' . esc_html__( 'AVIF が利用不可でも、WebP だけで動作します。AVIF は PHP 8.1 以上かつ libavif 対応の GD、または AVIF 対応の Imagick が必要です。', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</p>';
+			echo '<p class="description">' . esc_html__( 'AVIF が利用不可でも、WebP だけで動作します。AVIF を作るには、PHP 8.1 以上かつ libavif 対応の GD、AVIF 対応の Imagick、外部プログラムの cavif のどれかが必要です。', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</p>';
 		}
 		echo '<p><button type="button" class="button" id="kashiwazaki-next-gen-images-engine-test">' . esc_html__( '動作確認をやり直す', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</button> <span id="kashiwazaki-next-gen-images-engine-test-result"></span></p>';
 		echo '</div>';
@@ -685,8 +796,33 @@ final class Kashiwazaki_Next_Gen_Images_Admin {
 		}
 		echo '</tbody></table>';
 		echo '<p><button type="button" class="button" id="kashiwazaki-next-gen-images-mime-test">' . esc_html__( '配信テストを実行', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</button> <span id="kashiwazaki-next-gen-images-mime-test-result"></span></p>';
-		echo '<details><summary>' . esc_html__( '配信テストに失敗したときの対処（Apache 系のレンタルサーバー向け）', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</summary>';
-		echo '<p>' . esc_html__( 'サイトのトップフォルダ（WordPress のフォルダ）の .htaccess に、次の 3 行を追記してから、もう一度テストしてください。', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</p>';
+
+		// 種類の指定を、このプラグインが画像フォルダの .htaccess に書き足して直す（手で .htaccess を書かなくて済むように）。
+		// 対象は、このサイトで実際に使う形式（作れる、またはすでに変換ファイルがある）だけ。
+		$fix_formats = array();
+		foreach ( Kashiwazaki_Next_Gen_Images_Settings::enabled_formats() as $f ) {
+			$state  = ( is_array( $mime ) && isset( $mime[ $f ] ) ) ? $mime[ $f ] : 'unknown';
+			$in_use = ! empty( $support[ $f ] ) || ! empty( $stats['files'][ $f ] );
+			if ( $in_use && in_array( $state, array( 'warn', 'ng' ), true ) ) {
+				$fix_formats[] = strtoupper( $f );
+			}
+		}
+		if ( self::mime_fix_present() ) {
+			echo '<p>' . esc_html__( 'このプラグインが、画像フォルダの設定ファイル（.htaccess）に、WebP・AVIF の種類の指定を書き足しています。', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</p>';
+			echo '<p><button type="button" class="button" id="kashiwazaki-next-gen-images-mime-unfix">' . esc_html__( '書き足した指定を消す', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</button> <span id="kashiwazaki-next-gen-images-mime-unfix-result"></span></p>';
+		} elseif ( ! empty( $fix_formats ) ) {
+			echo '<p>' . esc_html(
+				sprintf(
+					/* translators: %s: format names */
+					__( 'サーバーが %s を正しい種類で返していません。下のボタンを押すと、画像フォルダの設定ファイル（.htaccess）に種類の指定を書き足して直します。先にテスト用のフォルダで試し、うまくいかないときは何も変更しません。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+					implode( '・', $fix_formats )
+				)
+			) . '</p>';
+			echo '<p><button type="button" class="button button-primary" id="kashiwazaki-next-gen-images-mime-fix">' . esc_html__( '自動で直す', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</button> <span id="kashiwazaki-next-gen-images-mime-fix-result"></span></p>';
+		}
+
+		echo '<details><summary>' . esc_html__( '自動で直せないとき・手で直すときの方法（Apache 系のレンタルサーバー向け）', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</summary>';
+		echo '<p>' . esc_html__( 'サイトのトップフォルダ（WordPress のフォルダ）の .htaccess に、次の 4 行を追記してから、もう一度テストしてください。', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</p>';
 		echo '<pre class="kashiwazaki-next-gen-images-code">&lt;IfModule mod_mime.c&gt;
 AddType image/webp .webp
 AddType image/avif .avif
@@ -771,32 +907,85 @@ AddType image/avif .avif
 			return $result;
 		}
 
-		$sub  = 'kashiwazaki-next-gen-images-test-' . wp_generate_password( 8, false );
-		$dir  = trailingslashit( $uploads['basedir'] ) . $sub;
-		$url  = trailingslashit( $uploads['baseurl'] ) . $sub;
-		$made = wp_mkdir_p( $dir );
-		if ( ! $made ) {
+		$probe = self::mime_probe( false );
+		if ( empty( $probe ) ) {
 			$result['webp_note'] = $result['avif_note'] = __( 'テスト用のフォルダを作れませんでした', 'wp-plugin-kashiwazaki-next-gen-images' );
 			update_option( Kashiwazaki_Next_Gen_Images_Settings::MIME_OPTION, $result, true );
 			return $result;
 		}
 
-		$bodies = array(
-			'webp' => 'RIFF' . pack( 'V', 4 + 8 + 10 ) . 'WEBPVP8 ' . pack( 'V', 10 ) . str_repeat( "\0", 10 ),
-			'avif' => pack( 'N', 24 ) . 'ftypavif' . pack( 'N', 0 ) . 'avifmif1' ,
-		);
-		foreach ( $bodies as $ext => $body ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
-			file_put_contents( $dir . '/t.' . $ext, $body );
+		foreach ( $probe as $ext => $row ) {
+			if ( '' !== $row['error'] ) {
+				$result[ $ext ]           = 'unknown';
+				$result[ $ext . '_note' ] = $row['error'];
+				continue;
+			}
+			if ( 200 !== $row['code'] ) {
+				$result[ $ext ]           = 'unknown';
+				$result[ $ext . '_note' ] = 'HTTP ' . $row['code'];
+				continue;
+			}
+			if ( $row['ok'] ) {
+				$result[ $ext ] = 'ok';
+			} else {
+				$result[ $ext ]           = $row['nosniff'] ? 'ng' : 'warn';
+				$result[ $ext . '_note' ] = 'Content-Type: ' . ( '' !== $row['type'] ? $row['type'] : '(none)' );
+			}
 		}
 
+		update_option( Kashiwazaki_Next_Gen_Images_Settings::MIME_OPTION, $result, true );
+		return $result;
+	}
+
+	/**
+	 * テスト用の小さなファイルを画像フォルダの中に置き、サーバーが返す状態と種類（Content-Type）を確かめる。
+	 *
+	 * テスト用のファイルは、実際の変換ファイルと同じ「元の拡張子＋形式」の名前（t.jpg.webp / t.jpg.avif）にする。
+	 * サーバーは、知らない拡張子があると手前の拡張子（.jpg）で種類を決めるので、「t.avif」では実際の配信と結果が違ってしまう。
+	 *
+	 * @param bool $own_htaccess true なら、テスト用フォルダの中に種類の指定（.htaccess）を置いて試す（画像フォルダ本体には触らない）。
+	 * @return array 形式ごとに error(string)・code(int)・type(string)・ok(bool)・nosniff(bool)。テスト用フォルダを作れなければ空の配列。
+	 */
+	private static function mime_probe( $own_htaccess ) {
+		$uploads = wp_get_upload_dir();
+		if ( empty( $uploads['basedir'] ) || ! empty( $uploads['error'] ) ) {
+			return array();
+		}
+		$sub = 'kashiwazaki-next-gen-images-test-' . wp_generate_password( 8, false );
+		$dir = trailingslashit( $uploads['basedir'] ) . $sub;
+		$url = trailingslashit( $uploads['baseurl'] ) . $sub;
+		if ( ! wp_mkdir_p( $dir ) ) {
+			return array();
+		}
+
+		$bodies = array(
+			'webp' => 'RIFF' . pack( 'V', 4 + 8 + 10 ) . 'WEBPVP8 ' . pack( 'V', 10 ) . str_repeat( "\0", 10 ),
+			'avif' => pack( 'N', 24 ) . 'ftypavif' . pack( 'N', 0 ) . 'avifmif1',
+		);
 		$wanted = array(
 			'webp' => 'image/webp',
 			'avif' => 'image/avif',
 		);
+		foreach ( $bodies as $ext => $body ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+			file_put_contents( $dir . '/t.jpg.' . $ext, $body );
+		}
+		if ( $own_htaccess ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+			file_put_contents( $dir . '/.htaccess', implode( "\n", self::mime_fix_lines() ) . "\n" );
+		}
+
+		$out = array();
 		foreach ( $wanted as $ext => $type ) {
+			$row      = array(
+				'error'   => '',
+				'code'    => 0,
+				'type'    => '',
+				'ok'      => false,
+				'nosniff' => false,
+			);
 			$response = wp_remote_head(
-				$url . '/t.' . $ext . '?_=' . time(),
+				$url . '/t.jpg.' . $ext . '?_=' . time(),
 				array(
 					'timeout'     => 8,
 					'redirection' => 3,
@@ -804,33 +993,276 @@ AddType image/avif .avif
 				)
 			);
 			if ( is_wp_error( $response ) ) {
-				$result[ $ext ]           = 'unknown';
-				$result[ $ext . '_note' ] = $response->get_error_message();
-				continue;
-			}
-			$code = (int) wp_remote_retrieve_response_code( $response );
-			$ctype = strtolower( (string) wp_remote_retrieve_header( $response, 'content-type' ) );
-			if ( 200 !== $code ) {
-				$result[ $ext ]           = 'unknown';
-				$result[ $ext . '_note' ] = 'HTTP ' . $code;
-				continue;
-			}
-			if ( 0 === strpos( $ctype, $type ) ) {
-				$result[ $ext ] = 'ok';
+				$row['error'] = $response->get_error_message();
 			} else {
-				$nosniff                  = ( false !== stripos( (string) wp_remote_retrieve_header( $response, 'x-content-type-options' ), 'nosniff' ) );
-				$result[ $ext ]           = $nosniff ? 'ng' : 'warn';
-				$result[ $ext . '_note' ] = 'Content-Type: ' . ( '' !== $ctype ? $ctype : '(none)' );
+				$row['code']    = (int) wp_remote_retrieve_response_code( $response );
+				$row['type']    = strtolower( (string) wp_remote_retrieve_header( $response, 'content-type' ) );
+				$row['ok']      = ( 200 === $row['code'] && 0 === strpos( $row['type'], $type ) );
+				$row['nosniff'] = ( false !== stripos( (string) wp_remote_retrieve_header( $response, 'x-content-type-options' ), 'nosniff' ) );
 			}
+			$out[ $ext ] = $row;
 		}
 
 		foreach ( array_keys( $bodies ) as $ext ) {
-			wp_delete_file( $dir . '/t.' . $ext );
+			wp_delete_file( $dir . '/t.jpg.' . $ext );
+		}
+		if ( $own_htaccess ) {
+			wp_delete_file( $dir . '/.htaccess' );
 		}
 		@rmdir( $dir ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.rmdir_rmdir
 
-		update_option( Kashiwazaki_Next_Gen_Images_Settings::MIME_OPTION, $result, true );
-		return $result;
+		return $out;
+	}
+
+	/**
+	 * 画像フォルダの .htaccess に書き足す内容（WebP・AVIF の種類の指定）。
+	 *
+	 * @return string[]
+	 */
+	private static function mime_fix_lines() {
+		return array(
+			'<IfModule mod_mime.c>',
+			'AddType image/webp .webp',
+			'AddType image/avif .avif',
+			'</IfModule>',
+		);
+	}
+
+	/**
+	 * 画像フォルダの .htaccess の場所。画像フォルダが使えないときは空文字。
+	 *
+	 * @return string
+	 */
+	private static function mime_fix_file() {
+		$uploads = wp_get_upload_dir();
+		if ( empty( $uploads['basedir'] ) || ! empty( $uploads['error'] ) ) {
+			return '';
+		}
+		return trailingslashit( $uploads['basedir'] ) . '.htaccess';
+	}
+
+	/**
+	 * このプラグインが、画像フォルダの .htaccess に種類の指定を書き足しているか。
+	 *
+	 * @return bool
+	 */
+	public static function mime_fix_present() {
+		$file = self::mime_fix_file();
+		if ( '' === $file || ! is_file( $file ) ) {
+			return false;
+		}
+		$content = file_get_contents( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		return is_string( $content ) && false !== strpos( $content, '# BEGIN ' . self::HTACCESS_MARKER );
+	}
+
+	/**
+	 * サーバーが WebP・AVIF を正しい種類で返すよう、画像フォルダの .htaccess に種類の指定を書き足す。
+	 *
+	 * 手順: (1) テスト用フォルダの中だけで試す → (2) 効くと分かったら画像フォルダの .htaccess に書き足す
+	 * → (3) 書いたあとにもう一度確かめる。(1) で効かない・エラーになるサーバーでは、何も変更しない。
+	 * (3) で想定と違えば、書く前の状態に戻す。
+	 *
+	 * @return array ok(bool)・message(string)。
+	 */
+	public static function apply_mime_fix() {
+		$file = self::mime_fix_file();
+		if ( '' === $file ) {
+			return array(
+				'ok'      => false,
+				'message' => __( '画像フォルダを使えないため、直せませんでした。何も変更していません。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+			);
+		}
+		if ( ! function_exists( 'insert_with_markers' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/misc.php';
+		}
+
+		// (0) すでに正しい種類で返っているなら、何も書かない。
+		$now = self::mime_probe( false );
+		if ( empty( $now ) ) {
+			return array(
+				'ok'      => false,
+				'message' => __( 'テスト用のフォルダを作れないため、直せませんでした。何も変更していません。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+			);
+		}
+		$already = true;
+		foreach ( $now as $row ) {
+			if ( ! $row['ok'] ) {
+				$already = false;
+			}
+		}
+		if ( $already ) {
+			self::run_mime_test();
+			return array(
+				'ok'      => true,
+				'message' => __( 'すでに正しい種類で返っています。変更は不要でした。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+			);
+		}
+
+		// (1) テスト用フォルダの中だけで試す。
+		$probe = self::mime_probe( true );
+		if ( empty( $probe ) ) {
+			return array(
+				'ok'      => false,
+				'message' => __( 'テスト用のフォルダを作れないため、直せませんでした。何も変更していません。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+			);
+		}
+		foreach ( $probe as $row ) {
+			if ( '' !== $row['error'] || 200 !== $row['code'] ) {
+				return array(
+					'ok'      => false,
+					'message' => __( 'このサーバーでは、この方法を使えませんでした（テスト用のフォルダで試したところ、エラーになりました）。何も変更していません。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+				);
+			}
+			if ( ! $row['ok'] ) {
+				return array(
+					'ok'      => false,
+					'message' => __( 'このサーバーでは、.htaccess による指定が効きませんでした（.htaccess を使わない種類のサーバーの可能性があります）。何も変更していません。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+				);
+			}
+		}
+
+		// (2) 画像フォルダの .htaccess に書き足す（すでにある内容は残す）。元に戻せるよう、書く前の状態を控える。
+		$existed = file_exists( $file );
+		$before  = $existed ? file_get_contents( $file ) : null; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		if ( $existed && ! is_string( $before ) ) {
+			return array(
+				'ok'      => false,
+				'message' => __( '画像フォルダの設定ファイル（.htaccess）を読めないため、直せませんでした。何も変更していません。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+			);
+		}
+		if ( ! insert_with_markers( $file, self::HTACCESS_MARKER, self::mime_fix_lines() ) ) {
+			if ( ! self::mime_fix_restore( $file, $existed, $before ) ) {
+				return array(
+					'ok'      => false,
+					'message' => __( '画像フォルダに設定ファイル（.htaccess）を書けず、書きかけの状態を元に戻すこともできませんでした。', 'wp-plugin-kashiwazaki-next-gen-images' ) . ' ' . self::mime_fix_manual_message( $file ),
+				);
+			}
+			return array(
+				'ok'      => false,
+				'message' => __( '画像フォルダに設定ファイル（.htaccess）を書けませんでした。何も変更していません。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+			);
+		}
+
+		// (3) 書いたあとに確かめる（今度はテスト用フォルダに指定を置かない。画像フォルダに書いた指定が効いているかを見る）。
+		$check = self::mime_probe( false );
+		$good  = ! empty( $check );
+		foreach ( $check as $row ) {
+			if ( ! $row['ok'] ) {
+				$good = false;
+			}
+		}
+		if ( ! $good ) {
+			if ( ! self::mime_fix_restore( $file, $existed, $before ) ) {
+				return array(
+					'ok'      => false,
+					'message' => __( '書き足したあとの確認で、想定どおりになりませんでした。書き足した指定を元に戻すこともできませんでした。', 'wp-plugin-kashiwazaki-next-gen-images' ) . ' ' . self::mime_fix_manual_message( $file ),
+				);
+			}
+			return array(
+				'ok'      => false,
+				'message' => __( '書き足したあとの確認で、想定どおりになりませんでした。書き足す前の状態に戻しました。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+			);
+		}
+
+		self::run_mime_test();
+		return array(
+			'ok'      => true,
+			'message' => __( '直しました。サーバーが WebP・AVIF を正しい種類で返すようになりました。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+		);
+	}
+
+	/**
+	 * 画像フォルダの .htaccess を、書き足す前の状態に戻す。
+	 *
+	 * @param string      $file    .htaccess の場所。
+	 * @param bool        $existed 書き足す前に、ファイルがあったか。
+	 * @param string|null $before  書き足す前の中身。
+	 * @return bool 戻せたら true。
+	 */
+	private static function mime_fix_restore( $file, $existed, $before ) {
+		if ( $existed ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+			$written = file_put_contents( $file, (string) $before, LOCK_EX );
+			clearstatcache( true, $file );
+			$now = @file_get_contents( $file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			// 書けたバイト数と、読み直した中身が書く前と同じかで、戻せたかを確かめる。
+			return strlen( (string) $before ) === $written && is_string( $now ) && $now === (string) $before;
+		}
+		if ( file_exists( $file ) ) {
+			wp_delete_file( $file );
+			clearstatcache( true, $file );
+		}
+		return ! file_exists( $file );
+	}
+
+	/**
+	 * 戻しに失敗したときの文言（どこを直せばよいかを書く）。
+	 *
+	 * @param string $file .htaccess の場所。
+	 * @return string
+	 */
+	private static function mime_fix_manual_message( $file ) {
+		return sprintf(
+			/* translators: %s: path of the .htaccess file */
+			__( '%s の「# BEGIN Kashiwazaki Next-Gen Images」から「# END Kashiwazaki Next-Gen Images」までの行を、手で消してください。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+			$file
+		);
+	}
+
+	/**
+	 * 画像フォルダの .htaccess から、このプラグインが書き足した種類の指定だけを取り除く。
+	 * 他の内容は残す。取り除いたあと何も残らなければ、ファイルごと消す。
+	 *
+	 * @return array ok(bool)・message(string)。
+	 */
+	public static function remove_mime_fix() {
+		$file = self::mime_fix_file();
+		if ( '' !== $file && is_file( $file ) ) {
+			$content = @file_get_contents( $file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			if ( ! is_string( $content ) ) {
+				// 読めない（権限など）。指定が残っているかどうかも分からないので、消したとは言わない。
+				return array(
+					'ok'      => false,
+					'message' => __( '画像フォルダの設定ファイル（.htaccess）を読めないため、書き足した指定を消せませんでした。', 'wp-plugin-kashiwazaki-next-gen-images' ) . ' ' . self::mime_fix_manual_message( $file ),
+				);
+			}
+			if ( false !== strpos( $content, '# BEGIN ' . self::HTACCESS_MARKER ) ) {
+				$marker = preg_quote( self::HTACCESS_MARKER, '/' );
+				// 目印の行から目印の行までと、その直前の改行 1 つ（書き足したときに入った区切り）を取り除く。前後の内容は 1 文字も変えない
+				// （目印の行の後ろの改行は、消さずに残す。改行が CRLF のファイルでも「\r」だけを消してしまわないよう、先読みで確かめるだけにする）。
+				$rest = preg_replace( '/(?:\r?\n)?^[ \t]*# BEGIN ' . $marker . '[ \t]*\r?\n.*?^[ \t]*# END ' . $marker . '[ \t]*(?=\r?\n|\z)/ms', '', $content );
+				if ( ! is_string( $rest ) || false !== strpos( $rest, '# BEGIN ' . self::HTACCESS_MARKER ) ) {
+					return array(
+						'ok'      => false,
+						'message' => __( '書き足した指定を取り除けませんでした。何も変更していません。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+					);
+				}
+				if ( '' === trim( $rest ) ) {
+					wp_delete_file( $file );
+					clearstatcache( true, $file );
+					$done = ! file_exists( $file );
+				} else {
+					// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+					$written = file_put_contents( $file, $rest, LOCK_EX );
+					clearstatcache( true, $file );
+					$now  = @file_get_contents( $file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+					$done = ( strlen( $rest ) === $written && is_string( $now ) && false === strpos( $now, '# BEGIN ' . self::HTACCESS_MARKER ) );
+				}
+				if ( ! $done ) {
+					// 書けなかった・消せなかった（権限など）。指定が残っているので、消したとは言わない。
+					self::run_mime_test();
+					return array(
+						'ok'      => false,
+						'message' => __( '書き足した指定を消せませんでした（画像フォルダの設定ファイル（.htaccess）を書き換えられません）。', 'wp-plugin-kashiwazaki-next-gen-images' ) . ' ' . self::mime_fix_manual_message( $file ),
+					);
+				}
+			}
+		}
+		self::run_mime_test();
+		return array(
+			'ok'      => true,
+			'message' => __( '書き足した指定を消しました。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+		);
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -1038,6 +1470,28 @@ AddType image/avif .avif
 	}
 
 	/**
+	 * 種類の指定を、画像フォルダの .htaccess に書き足して直す。
+	 *
+	 * @return void
+	 */
+	public static function ajax_mime_fix() {
+		self::ajax_guard( 'manage_options' );
+		$res = self::apply_mime_fix();
+		self::respond( array( 'message' => $res['message'] ), ! empty( $res['ok'] ), ! empty( $res['ok'] ) ? 200 : 409 );
+	}
+
+	/**
+	 * 画像フォルダの .htaccess に書き足した種類の指定を消す。
+	 *
+	 * @return void
+	 */
+	public static function ajax_mime_unfix() {
+		self::ajax_guard( 'manage_options' );
+		$res = self::remove_mime_fix();
+		self::respond( array( 'message' => $res['message'] ), ! empty( $res['ok'] ), ! empty( $res['ok'] ) ? 200 : 409 );
+	}
+
+	/**
 	 * 変換エンジンの動作確認をやり直す。
 	 *
 	 * @return void
@@ -1112,7 +1566,7 @@ AddType image/avif .avif
 			'memory'         => __( '変換できず（メモリ不足）', 'wp-plugin-kashiwazaki-next-gen-images' ),
 			'icc'            => __( '変換なし（sRGB 以外の色設定）', 'wp-plugin-kashiwazaki-next-gen-images' ),
 			'cmyk'           => __( '変換なし（CMYK 画像）', 'wp-plugin-kashiwazaki-next-gen-images' ),
-			'lossless_avif'  => __( '変換なし（劣化なしの設定のため。AVIF は劣化なしで作れません）', 'wp-plugin-kashiwazaki-next-gen-images' ),
+			'lossless_avif'  => __( '変換なし（劣化なしの設定のため。このプラグインは PNG・GIF の AVIF を劣化なしで作れません）', 'wp-plugin-kashiwazaki-next-gen-images' ),
 			'lossless_unavailable' => __( '変換なし（劣化なしの設定ですが、このサーバーは劣化なしの WebP を書き出せません）', 'wp-plugin-kashiwazaki-next-gen-images' ),
 			'mime_mismatch'  => __( '変換なし（拡張子と中身が不一致）', 'wp-plugin-kashiwazaki-next-gen-images' ),
 			'corrupt'        => __( '変換なし（画像として読めません）', 'wp-plugin-kashiwazaki-next-gen-images' ),
@@ -1170,7 +1624,8 @@ AddType image/avif .avif
 				}
 				arsort( $counts );
 				$top   = $counts ? (string) key( $counts ) : '';
-				$class = ( ! empty( $meta['state'] ) && 'failed' === $meta['state'] ) ? ' kashiwazaki-next-gen-images-badge-ng' : '';
+				// 失敗の色は、記録の状態ではなく「変換できなかった」札が残っているかで決める（失敗した画像をもう一度処理して、前回の札をそのまま残したときも赤く出す）。
+				$class = ( ( ! empty( $meta['state'] ) && 'failed' === $meta['state'] ) || Kashiwazaki_Next_Gen_Images_Converter::files_have_failed( $meta['files'], Kashiwazaki_Next_Gen_Images_Converter::active_formats() ) ) ? ' kashiwazaki-next-gen-images-badge-ng' : '';
 				$label = '<span class="kashiwazaki-next-gen-images-badge' . $class . '">' . esc_html( self::reason_label( $top ) ) . '</span>';
 			}
 			$html .= $label;
@@ -1182,8 +1637,15 @@ AddType image/avif .avif
 			}
 			$html .= '<br><span class="description">' . esc_html( sprintf( /* translators: %s: size */ __( '合計 %s 削減', 'wp-plugin-kashiwazaki-next-gen-images' ), size_format( $saved ) ) ) . '</span>';
 		}
-		if ( ! empty( $meta['state'] ) && 'partial' === $meta['state'] ) {
-			$html .= '<br><span class="description">' . esc_html__( '一部のサイズが未処理', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</span>';
+		if ( ! empty( $have ) ) {
+			// 一部の形式・サイズだけが変換できなかった（WebP はできて AVIF だけ失敗した、など）。
+			if ( ! empty( $meta['files'] ) && Kashiwazaki_Next_Gen_Images_Converter::files_have_failed( $meta['files'], Kashiwazaki_Next_Gen_Images_Converter::active_formats() ) ) {
+				$html .= '<br><span class="kashiwazaki-next-gen-images-badge kashiwazaki-next-gen-images-badge-ng">' . esc_html__( '一部のサイズで変換できず', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</span>';
+			}
+			// まだ処理が要るサイズ・形式がある（時間切れで残った・設定を切り替えた・変換ファイルが消えた など。一括変換の対象と同じ規則）。
+			if ( Kashiwazaki_Next_Gen_Images_Converter::needs_work( $id ) ) {
+				$html .= '<br><span class="description">' . esc_html__( '一部のサイズが未処理', 'wp-plugin-kashiwazaki-next-gen-images' ) . '</span>';
+			}
 		}
 		$html .= '<br><button type="button" class="button button-small kashiwazaki-next-gen-images-convert-button" data-id="' . esc_attr( (string) $id ) . '" data-force="' . ( empty( $have ) ? '0' : '1' ) . '">' . esc_html( empty( $have ) ? __( '今すぐ変換', 'wp-plugin-kashiwazaki-next-gen-images' ) : __( '再変換', 'wp-plugin-kashiwazaki-next-gen-images' ) ) . '</button>';
 		return $html;

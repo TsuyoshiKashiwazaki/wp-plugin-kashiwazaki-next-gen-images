@@ -11,7 +11,7 @@
     <nav class="sidebar">
         <div class="sidebar-header">
             <h2 style="color:#fff;">Next-Gen Images</h2>
-            <span class="version">v1.0.0</span>
+            <span class="version">v1.0.1</span>
             <img src="images/main-visual.png" alt="" style="width:100%;border-radius:4px;margin-top:8px;">
         </div>
         <ul>
@@ -23,6 +23,7 @@
             <li><a href="media.html">メディアライブラリ</a></li>
             <li><a href="delivery.html">サイトでの表示のしくみ</a></li>
             <li><a href="cli.html">コマンドでの操作</a></li>
+            <li><a href="cavif.html">cavif で AVIF を作る</a></li>
             <li><a href="troubleshooting.html">トラブルシューティング</a></li>
         </ul>
     </nav>
@@ -32,7 +33,7 @@
 
 <figure class="infographic"><img src="images/infographics/cli-flow.png" alt="コマンドで変換する流れ" class="lightbox-trigger"><figcaption>status で状況を確かめ、convert で変換します</figcaption></figure>
 <section><h2>コマンドの一覧</h2>
-<table><thead><tr><th style="width:50%;">コマンド</th><th>内容</th></tr></thead><tbody><tr><td><code>wp kashiwazaki-next-gen-images status</code></td><td>状況を表示します。このサーバーで作れる形式、画像の数・変換済み・失敗の数、形式ごとのファイル数と容量の変化を表示します</td></tr><tr><td><code>wp kashiwazaki-next-gen-images convert</code></td><td>変換が必要な画像をすべて変換します</td></tr><tr><td><code>wp kashiwazaki-next-gen-images convert 123 456</code></td><td>指定した番号（ID）の画像だけを変換します</td></tr></tbody></table>
+<table><thead><tr><th style="width:50%;">コマンド</th><th>内容</th></tr></thead><tbody><tr><td><code>wp kashiwazaki-next-gen-images status</code></td><td>状況を表示します。このサーバーで作れる形式、画像の数・変換済み・失敗の数・処理が必要な画像の数（needs work。数えきれなかったときは unknown）、形式ごとのファイル数と容量の変化を表示します</td></tr><tr><td><code>wp kashiwazaki-next-gen-images convert</code></td><td>変換が必要な画像をすべて変換します</td></tr><tr><td><code>wp kashiwazaki-next-gen-images convert 123 456</code></td><td>指定した番号（ID）の画像だけを変換します</td></tr></tbody></table>
 <h3>オプション</h3>
 <table><thead><tr><th style="width:35%;">オプション</th><th>内容</th></tr></thead><tbody><tr><td><code>--force</code></td><td>変換済みの画像も作り直します（画像の番号を指定しないときは、すべての画像）。以前に失敗した画像も試します</td></tr><tr><td><code>--retry-failed</code></td><td>以前に失敗した画像（メモリ不足・エンジンのエラーなど、再試行できるもの）も試します</td></tr></tbody></table>
 </section>
@@ -46,11 +47,11 @@
 
         <nav class="page-nav">
             <a href="delivery.html" class="prev">&laquo; サイトでの表示のしくみ</a>
-            <a href="troubleshooting.html" class="next">トラブルシューティング &raquo;</a>
+            <a href="cavif.html" class="next">cavif で AVIF を作る &raquo;</a>
         </nav>
         <footer class="manual-footer">
             <p>作者: <a href="https://www.tsuyoshikashiwazaki.jp/profile/" target="_blank" rel="noopener">柏崎剛（Tsuyoshi Kashiwazaki）</a></p>
-            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.0</p>
+            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.1</p>
         </footer>
     </main>
     <div class="lightbox"></div>

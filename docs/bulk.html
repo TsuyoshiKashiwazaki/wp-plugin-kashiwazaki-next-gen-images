@@ -11,7 +11,7 @@
     <nav class="sidebar">
         <div class="sidebar-header">
             <h2 style="color:#fff;">Next-Gen Images</h2>
-            <span class="version">v1.0.0</span>
+            <span class="version">v1.0.1</span>
             <img src="images/main-visual.png" alt="" style="width:100%;border-radius:4px;margin-top:8px;">
         </div>
         <ul>
@@ -23,6 +23,7 @@
             <li><a href="media.html">メディアライブラリ</a></li>
             <li><a href="delivery.html">サイトでの表示のしくみ</a></li>
             <li><a href="cli.html">コマンドでの操作</a></li>
+            <li><a href="cavif.html">cavif で AVIF を作る</a></li>
             <li><a href="troubleshooting.html">トラブルシューティング</a></li>
         </ul>
     </nav>
@@ -35,10 +36,10 @@
 <p>メディアライブラリの画像を、1 枚ずつ順番に変換します。</p>
 <figure class="infographic"><img src="images/infographics/bulk-flow.png" alt="一括変換の流れ" class="lightbox-trigger"><figcaption>開始 → 1 枚ずつ変換 → 進み具合の表示 → 完了。停止しても続きから再開できます</figcaption></figure>
 <h3>数字の見方</h3>
-<table><thead><tr><th style="width:35%;">表示</th><th>意味</th></tr></thead><tbody><tr><td>画像の総数</td><td>メディアライブラリの JPEG・PNG・GIF・WebP の画像の数</td></tr><tr><td>変換済み</td><td>WebP か AVIF が 1 つ以上ある画像の数</td></tr><tr><td>未変換（目安）</td><td>総数から変換済みを引いた数。軽くならない画像やアニメーション画像など、変換しない画像も含むため、0 にならないことがあります</td></tr></tbody></table>
+<table><thead><tr><th style="width:35%;">表示</th><th>意味</th></tr></thead><tbody><tr><td>画像の総数</td><td>メディアライブラリの JPEG・PNG・GIF・WebP の画像の数</td></tr><tr><td>変換済み</td><td>WebP か AVIF のファイルが実際に 1 つ以上ある画像の数</td></tr><tr><td>処理が必要</td><td>「一括変換を開始」で処理される画像の数。まだ変換していない画像に加えて、「PNG・GIF は劣化なしで変換」の切り替えで PNG・GIF の WebP を作り直す・AVIF を作る・片付ける必要がある画像、変換ファイルが消えた画像、元の画像が差し替わった画像を含みます。軽くならない画像やアニメーション画像など、変換しないと決まった画像は含みません。画像がとても多いサイトやサーバーが混んでいるときは、時間内に数えきれずに「—」と出ることがあります</td></tr></tbody></table>
 <h3>開始前に選べること</h3>
 <h3>以前に失敗した画像も試す</h3><p>前回うまく変換できなかった画像を、もう一度試します。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>オフ</td></tr><tr><td style="width:30%;">対象になる失敗</td><td>メモリ不足・エンジンのエラー・出力の検証に失敗・書き込み失敗・読み込み失敗</td></tr><tr><td style="width:30%;">対象にならないもの</td><td>「軽くならないため」「画素数が上限超過」など、理由があって変換しなかった画像。これらを作り直すには「すべて作り直す」を使います</td></tr></tbody></table>
-<h3>すべて作り直す</h3><p>変換済みの画像も含めて、すべて作り直します。画質などの設定を変えたあとに使います。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>オフ</td></tr><tr><td style="width:30%;">オンのとき</td><td>すべての画像を対象にし、以前に失敗した画像も試します</td></tr><tr><td style="width:30%;">オフのとき</td><td>まだ変換していない画像、元の画像が差し替わった画像、変換ファイルが消えた画像だけを変換します</td></tr><tr><td style="width:30%;">注意</td><td>他のプラグインが作った WebP・AVIF は上書きしません</td></tr></tbody></table>
+<h3>すべて作り直す</h3><p>変換済みの画像も含めて、すべて作り直します。画質を変えたあとに使います。「PNG・GIF は劣化なしで変換」を切り替えたあとや、まだ変換していない画像の変換には不要です（通常の「一括変換を開始」で処理されます）。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>オフ</td></tr><tr><td style="width:30%;">オンのとき</td><td>すべての画像を対象にし、以前に失敗した画像も試します</td></tr><tr><td style="width:30%;">オフのとき</td><td>まだ変換していない画像、元の画像が差し替わった画像、変換ファイルが消えた画像、「PNG・GIF は劣化なしで変換」の切り替えで作り直し・片付けが要る画像だけを処理します</td></tr><tr><td style="width:30%;">注意</td><td>他のプラグインが作った WebP・AVIF は上書きしません</td></tr></tbody></table>
 <p>この 2 つのスイッチは保存されません。開始したときの状態だけが使われます。</p>
 <h3>操作手順</h3>
 <div class="step"><div class="step-number">1</div><div class="step-body"><h4>「一括変換を開始」を押す</h4><p>ボタンが「処理中…」に変わり、進み具合が表示されます。</p></div></div><div class="step"><div class="step-number">2</div><div class="step-body"><h4>進み具合を見る</h4><p>進捗バーと「◯% — 変換中… 処理した枚数 / 全体の枚数（変換したファイル数・失敗の数・減った容量）」が表示されます。下の行には経過時間、残りの目安、いま処理している画像の名前が出ます。</p><figure class="screenshot"><img src="images/screenshots/07-bulk-running.png" alt="一括変換の実行中の表示" class="lightbox-trigger"><figcaption>実行中の表示</figcaption></figure></div></div><div class="step"><div class="step-number">3</div><div class="step-body"><h4>完了を確かめる</h4><p>終わると進捗バーが 100% になり、「完了しました。変換 ◯ ファイル / 失敗 ◯ 枚 / 削減 ◯」と、かかった時間が表示されます。</p><figure class="screenshot"><img src="images/screenshots/08-bulk-done.png" alt="一括変換の完了後の表示" class="lightbox-trigger"><figcaption>完了したときの表示</figcaption></figure></div></div>
@@ -65,7 +66,7 @@
         </nav>
         <footer class="manual-footer">
             <p>作者: <a href="https://www.tsuyoshikashiwazaki.jp/profile/" target="_blank" rel="noopener">柏崎剛（Tsuyoshi Kashiwazaki）</a></p>
-            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.0</p>
+            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.1</p>
         </footer>
     </main>
     <div class="lightbox"></div>

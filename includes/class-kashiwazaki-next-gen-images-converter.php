@@ -20,7 +20,7 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 	const META_KEY    = '_kashiwazaki_next_gen_images';
 	const LOCK_PREFIX = 'kashiwazaki_next_gen_images_lock_';
 	const LOCK_TTL    = 300;
-	const STATS_KEY   = 'kashiwazaki_next_gen_images_stats';
+	const STATS_KEY   = 'kashiwazaki_next_gen_images_stats_v2'; // 1.0.1 で集計の形を変えた（needs・失敗の数え方）。前の形の一時保存を読まない。
 	const CONFLICT_OPTION = 'kashiwazaki_next_gen_images_name_conflicts';
 
 	/**
@@ -302,6 +302,132 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 	}
 
 	/**
+	 * WebP のファイルが劣化なし（'VP8L'）か劣化あり（'VP8 '）かを、先頭のチャンクから読む。
+	 * WebP の仕様（RIFF コンテナ）: 'RIFF'・大きさ・'WEBP' のあとにチャンク（FourCC 4 バイト + 大きさ 4 バイト。大きさが奇数なら 1 バイトの詰め物）が続き、
+	 * 静止画の画像データは 'VP8 '（劣化あり）か 'VP8L'（劣化なし）。拡張形式では 'VP8X'・'ICCP'・'ALPH' などがその前に来る。
+	 *
+	 * @param string $path WebP の絶対パス。
+	 * @return bool|null 劣化なしなら true、劣化ありなら false、分からない（WebP でない・動く画像・読めない）なら null。
+	 */
+	public static function webp_is_lossless( $path ) {
+		$kind = self::webp_kind( $path );
+		if ( 'lossless' === $kind ) {
+			return true;
+		}
+		return ( 'lossy' === $kind ) ? false : null;
+	}
+
+	/**
+	 * WebP のファイルの形式を読む（webp_is_lossless の本体）。読み込みの失敗と、WebP として解釈できないことを分けて返す。
+	 *
+	 * @param string $path WebP の絶対パス。
+	 * @return string lossless|lossy|unknown（無い・WebP でない・動く画像・チャンクが多すぎる）|unreadable（開けない・途中で読めない）。
+	 */
+	private static function webp_kind( $path ) {
+		if ( ! is_file( $path ) ) {
+			return 'unknown';
+		}
+		$h = @fopen( $path, 'rb' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_fopen
+		if ( ! $h ) {
+			return 'unreadable';
+		}
+		$size_all = (int) @filesize( $path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		$kind     = 'unknown';
+		$head     = fread( $h, 12 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread
+		if ( ! is_string( $head ) || ( strlen( $head ) < 12 && $size_all >= 12 ) ) {
+			$kind = 'unreadable';
+		} elseif ( 12 === strlen( $head ) && 'RIFF' === substr( $head, 0, 4 ) && 'WEBP' === substr( $head, 8, 4 ) ) {
+			for ( $i = 0; $i < 32; $i++ ) {
+				$pos = ftell( $h );
+				$ch  = fread( $h, 8 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread
+				if ( ! is_string( $ch ) || 8 !== strlen( $ch ) ) {
+					// ファイルの終わりより手前で読めなくなったなら、読み込みの失敗。
+					if ( false !== $pos && $pos + 8 <= $size_all ) {
+						$kind = 'unreadable';
+					}
+					break;
+				}
+				$cc = substr( $ch, 0, 4 );
+				if ( 'VP8L' === $cc ) {
+					$kind = 'lossless';
+					break;
+				}
+				if ( 'VP8 ' === $cc ) {
+					$kind = 'lossy';
+					break;
+				}
+				if ( 'ANIM' === $cc || 'ANMF' === $cc ) {
+					break; // 動く画像は判定しない。
+				}
+				$size = unpack( 'V', substr( $ch, 4, 4 ) );
+				$size = (int) $size[1];
+				if ( 0 !== fseek( $h, $size + ( $size & 1 ), SEEK_CUR ) ) {
+					$kind = 'unreadable';
+					break;
+				}
+			}
+		}
+		fclose( $h ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+		return $kind;
+	}
+
+	/**
+	 * 元が PNG・GIF の WebP が、いまの「PNG・GIF は劣化なしで変換」の設定と合わないか（劣化なし・劣化ありが違う）。
+	 * 設定を切り替えたあと、前の設定で作った WebP を作り直すために使う。ファイルそのものを見るので、記録の形や作った時期によらない。
+	 *
+	 * @param array  $f      変換元の情報（path・mime）。
+	 * @param string $format 形式。
+	 * @return bool 合わないなら true。分からないときは false（毎回の作り直しを起こさない）。
+	 */
+	public static function lossless_stale( array $f, $format ) {
+		if ( ! self::lossless_tracked( $f['mime'], $format ) ) {
+			return false;
+		}
+		$p = $f['path'] . '.webp';
+		if ( is_file( $p ) && ! is_readable( $p ) ) {
+			return true; // 読めないので確かめられない。作り直しを試みる（できなければ失敗として知らせる）。
+		}
+		$kind = self::webp_kind( $p );
+		if ( 'unreadable' === $kind ) {
+			return true; // 途中で読めなくなった。同じく作り直しを試みる。
+		}
+		if ( 'unknown' === $kind ) {
+			return false; // WebP として解釈できない・動く画像。毎回の作り直しを起こさない。
+		}
+		return ( 'lossless' === $kind ) !== self::lossless_wanted( $f['mime'], 'webp' );
+	}
+
+	/**
+	 * 「PNG・GIF は劣化なしで変換」の設定で出来が変わる組か（元が PNG・GIF の WebP）。
+	 *
+	 * @param string $mime   元画像の MIME。
+	 * @param string $format 形式。
+	 * @return bool
+	 */
+	public static function lossless_tracked( $mime, $format ) {
+		return 'webp' === $format && in_array( $mime, array( 'image/png', 'image/gif' ), true );
+	}
+
+	/**
+	 * 「元より大きいので作らない（larger）」の札が、いまの「劣化なし」の設定で付けたものでないか。
+	 * 劣化なし・劣化ありで大きさが変わるので、設定を切り替えたら試し直す。札にそのときの設定（sl）が無い（この判定より前の札）なら、一度だけ試し直す。
+	 *
+	 * @param array  $f      変換元の情報（path・mime）。
+	 * @param string $format 形式。
+	 * @param array  $entry  そのファイルの記録。
+	 * @return bool 試し直すなら true。
+	 */
+	public static function larger_stale( array $f, $format, array $entry ) {
+		if ( ! isset( $entry['skip'][ $format ] ) || 'larger' !== $entry['skip'][ $format ] || ! self::lossless_tracked( $f['mime'], $format ) ) {
+			return false;
+		}
+		if ( ! isset( $entry['sl'][ $format ] ) ) {
+			return true;
+		}
+		return (bool) $entry['sl'][ $format ] !== self::lossless_wanted( $f['mime'], $format );
+	}
+
+	/**
 	 * 実際に作る形式（設定で有効、かつこのサーバーで書き出せるもの）。速い WebP を先にする。
 	 *
 	 * @return string[]
@@ -344,41 +470,75 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 		$retry = ! empty( $args['retry_failed'] );
 		foreach ( $files as $f ) {
 			$entry = isset( $meta['files'][ $f['rel'] ] ) ? $meta['files'][ $f['rel'] ] : null;
-			if ( ! is_array( $entry ) ) {
-				return true;
-			}
-			clearstatcache( true, $f['path'] );
-			if ( (int) $entry['src_size'] !== (int) filesize( $f['path'] ) || (int) $entry['src_mtime'] !== (int) filemtime( $f['path'] ) ) {
-				return true;
-			}
-			foreach ( $formats as $format ) {
-				if ( ! self::pair_applies( $f['mime'], $format ) ) {
-					continue;
-				}
-				// 「劣化なし」の設定は、あとから変わり得る。設定に合わなくなった記録は、処理が必要と判定する(片付け・作り直し)。
-				if ( self::lossless_blocks_avif( $f['mime'], $format ) ) {
-					if ( isset( $entry[ $format ] ) ) {
-						return true; // 以前に作った AVIF(劣化している)の片付け。
-					}
-				} elseif ( isset( $entry['skip'][ $format ] ) && 'lossless_avif' === $entry['skip'][ $format ] ) {
-					return true; // 設定が戻った。AVIF を作り直す。
-				}
-				if ( isset( $entry[ $format ] ) ) {
-					if ( ! is_file( $f['path'] . '.' . $format ) ) {
-						return true; // 変換済みのはずのファイルが消えている。
-					}
-					continue;
-				}
-				if ( isset( $entry['skip'][ $format ] ) ) {
-					if ( $retry && in_array( $entry['skip'][ $format ], self::RETRYABLE, true ) ) {
-						return true;
-					}
-					continue;
-				}
+			if ( self::file_needs_work( $f, $entry, $formats, $retry ) ) {
 				return true;
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * 1 ファイル分の処理が必要か（記録が無い・元画像が差し替わった・どれかの形式で組の処理が必要）。
+	 * needs_work() と集計（stats）が同じ規則を使うための関数。
+	 *
+	 * @param array      $f       変換元の情報（path・mime・rel）。
+	 * @param array|null $entry   そのファイルの記録。
+	 * @param string[]   $formats 有効な形式。
+	 * @param bool       $retry   以前の失敗も試すか。
+	 * @return bool
+	 */
+	public static function file_needs_work( array $f, $entry, array $formats, $retry ) {
+		if ( ! is_array( $entry ) ) {
+			return true;
+		}
+		clearstatcache( true, $f['path'] );
+		if ( (int) $entry['src_size'] !== (int) @filesize( $f['path'] ) || (int) $entry['src_mtime'] !== (int) @filemtime( $f['path'] ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			return true;
+		}
+		foreach ( $formats as $format ) {
+			if ( self::pair_needs_work( $f, $format, $entry, $retry ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * 1 ファイル × 1 形式の処理が必要か（記録の札・変換ファイル・設定を見る。元画像の差し替えは見ない）。
+	 * needs_work() と、変換の途中で時間切れになった組を「未解決」に数えるかの判定（run）が、同じ規則を使う。
+	 *
+	 * @param array  $f      変換元の情報（path・mime）。
+	 * @param string $format 形式。
+	 * @param array  $entry  そのファイルの記録。
+	 * @param bool   $retry  以前の失敗も試すか。
+	 * @return bool
+	 */
+	public static function pair_needs_work( array $f, $format, array $entry, $retry ) {
+		if ( ! self::pair_applies( $f['mime'], $format ) ) {
+			return false;
+		}
+		// 「劣化なし」の設定は、あとから変わり得る。設定に合わなくなった記録は、処理が必要と判定する(片付け・作り直し)。
+		if ( self::lossless_blocks_avif( $f['mime'], $format ) ) {
+			if ( isset( $entry[ $format ] ) ) {
+				return true; // 以前に作った AVIF(劣化している)の片付け。
+			}
+		} elseif ( isset( $entry['skip'][ $format ] ) && 'lossless_avif' === $entry['skip'][ $format ] ) {
+			return true; // 設定が戻った。AVIF を作り直す。
+		}
+		if ( isset( $entry[ $format ] ) ) {
+			if ( ! is_file( $f['path'] . '.' . $format ) ) {
+				return true; // 変換済みのはずのファイルが消えていれば作り直す。
+			}
+			// 自分で作った WebP が「劣化なし」の設定と合わなくなっていれば（設定を切り替えた後）作り直す。
+			return ! empty( $entry[ $format ]['owned'] ) && self::lossless_stale( $f, $format );
+		}
+		if ( isset( $entry['skip'][ $format ] ) ) {
+			if ( self::larger_stale( $f, $format, $entry ) ) {
+				return true; // 「劣化なし」の設定が、元より大きいと決めたときと違う。試し直す。
+			}
+			return $retry && in_array( $entry['skip'][ $format ], self::RETRYABLE, true );
+		}
+		return true;
 	}
 
 	/**
@@ -461,7 +621,9 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 		);
 		// 強制再変換には 1 回ごとに固有の札を付ける。この札を付け終えた分は作り直し済みとみなすので、
 		// 途中で時間切れになっても続きから再開でき、同じ画像を何度も作り直すことがない。
-		if ( $args['force'] && '' === (string) $args['force_token'] ) {
+		// 以前の失敗を試す（retry_failed）ときも同じ札を使い、この回で一度試した組を、続きの呼び出しで試し直さない
+		// （先頭の組が毎回失敗しても、後ろの組へ進めるように）。
+		if ( ( $args['force'] || $args['retry_failed'] ) && '' === (string) $args['force_token'] ) {
 			$args['force_token'] = wp_generate_password( 10, false, false );
 		}
 
@@ -473,6 +635,7 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 			'message'   => '',
 			'progress'  => 0,
 			'force_token'  => (string) $args['force_token'],
+			'has_failed'   => false,
 		);
 
 		if ( ! self::is_supported_attachment( $id ) ) {
@@ -582,7 +745,7 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 			);
 			// 元画像が同じなら前回の記録を引き継ぐ。
 			if ( $same_src ) {
-				foreach ( array( 'webp', 'avif', 'skip', 'ft', 'po' ) as $k ) {
+				foreach ( array( 'webp', 'avif', 'skip', 'sl', 'ft', 'po' ) as $k ) {
 					if ( isset( $old[ $k ] ) ) {
 						$entry[ $k ] = $old[ $k ];
 					}
@@ -601,16 +764,35 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 				if ( ! self::pair_applies( $f['mime'], $format ) ) {
 					continue;
 				}
-				$pair_args          = $args;
-				$pair_args['force'] = $args['force'] && ( ! isset( $entry['ft'][ $format ] ) || (string) $entry['ft'][ $format ] !== (string) $args['force_token'] );
+				// この回（同じ札 force_token）で、この組をもう試したか。試したなら、作り直し・以前の失敗の再試行・所有している書き込み失敗の再試行を、
+				// この回の続きの呼び出しではしない（先頭の組が毎回失敗しても、後ろの組へ進めるように）。
+				$tried                     = '' !== (string) $args['force_token'] && isset( $entry['ft'][ $format ] ) && (string) $entry['ft'][ $format ] === (string) $args['force_token'];
+				$pair_args                 = $args;
+				$pair_args['force']        = $args['force'] && ! $tried;
+				$pair_args['retry_failed'] = $args['retry_failed'] && ! $tried;
+				$pair_args['tried']        = $tried;
+				$owned                     = self::owns_entry( $old, $format );
+				// 所有している write_failed の、通常の回（作り直しでも以前の失敗の再試行でもない）の自動の再試行（process_pair の retry_owned と同じ条件）。
+				// これは「進み」に数えず、締め切りも厳密に守る（毎回また失敗する組が、後ろの組の進みを止めたり、締め切りを何組も越えたりしないように）。
+				$repeat_wf = $same_src && $owned && ! $pair_args['force'] && ! $pair_args['retry_failed'] && empty( $pair_args['tried'] )
+					&& isset( $old['skip'][ $format ] ) && 'write_failed' === $old['skip'][ $format ];
 
 				// 次の 1 回（特に AVIF）が締め切りを越えそうなら、始めない。
 				$reserve = ( 'avif' === $format ) ? 3.0 : 1.0;
+				if ( $repeat_wf && $deadline > 0 && ( microtime( true ) + $reserve ) >= $deadline ) {
+					continue; // 次の呼び出しで試す（未解決には数えない。記録は前のまま引き継いでいる）。
+				}
 				// ただし、この呼び出しでまだ 1 回も変換していなければ、締め切りを無視して 1 つは進める。
 				// （締め切りが極端に短くても、毎回「何もできず時間切れ」にならないように。
 				// すでに変換済みのペアを確認しただけでは、進んだことにしない。）
 				if ( $deadline > 0 && ( $attempted > 0 || ! empty( $args['strict_deadline'] ) ) && ( microtime( true ) + $reserve ) >= $deadline ) {
-					if ( $pair_args['force'] || ( ! isset( $entry[ $format ] ) && ! isset( $entry['skip'][ $format ] ) ) ) {
+					// 始めなかった組が、まだ処理を要するなら未解決に数える（この呼び出しを partial にし、続きで処理する）。
+					// 前回の記録を引き継いだ組も、needs_work() と同じ規則（pair_needs_work）で見る: 設定の切り替えで古くなった札、
+					// 消えた変換ファイル、劣化なしに戻したときの片付けを、「済み」と数えて取り残さない。
+					// 以前の失敗（再試行の対象の札）は、この回でまだ試していなければ要処理に数える（retry_failed のときだけ）。
+					// この回で試した組（札 ft が今回のもの）は、作り直しも再試行も済んだので数えない。
+					$skip_now = isset( $entry['skip'][ $format ] ) ? $entry['skip'][ $format ] : '';
+					if ( $pair_args['force'] || ( $pair_args['retry_failed'] && in_array( $skip_now, self::RETRYABLE, true ) ) || self::pair_needs_work( $f, $format, $entry, false ) ) {
 						++$unresolved;
 					}
 					// 元画像が差し替わっていたのに、時間切れでこの形式を作り直せない。旧画像から作った自作の変換は、その場で片付ける
@@ -639,13 +821,11 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 					continue;
 				}
 
-				$owned     = self::owns_entry( $old, $format );
 				$retain_po = false;
 				$pair      = self::process_pair( $f, $format, $old, $same_src, $pair_args, $src_size, $src_mtime, $owned );
-				if ( ! empty( $pair['attempted'] ) ) {
-					++$attempted;
-				}
-				if ( $args['force'] ) {
+				$tried_engine = ! empty( $pair['attempted'] ); // 進みに数えるかは、下の片付けまで終えた最後の結果で決める。
+				// この回で処理した組に札を付ける（作り直しは今どおり全部の組。以前の失敗の再試行は、前回の札をそのまま返しただけの組を除く）。
+				if ( $args['force'] || ( $args['retry_failed'] && empty( $pair['kept'] ) ) ) {
 					$entry['ft'][ $format ] = (string) $args['force_token'];
 				}
 
@@ -657,13 +837,25 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 					// 登録の確認が失敗('error')したときは、登録済みでも未登録でもない。片付けられていないものとして、所有の記録(po)を残す（次の呼び出しで再試行する）。
 					// 確認は 1 回だけ行い、その結果で分岐する（2 回に分けると、2 回目だけ失敗したとき error を「登録済み」と読んで枝を飛ばし、po を落とす）。
 					$reg_state = is_file( $variant ) ? self::registration_state( $variant ) : 'n/a';
+					$stale_ll  = ( 'n/a' !== $reg_state ) && self::lossless_stale( $f, $format );
 					if ( 'error' === $reg_state ) {
 						$retain_po = true;
+						if ( $stale_ll ) {
+							// 「劣化なし」の設定と合わない旧ファイルを、確かめられず片付けられなかった。配信しないよう「使わない一覧」に載せ、
+							// 再試行の対象の札にして失敗として知らせ、次の通常の変換で（所有の write_failed として）もう一度確かめる。
+							// 一覧にも載せられない（DB の不調）ときも、確かめられていないファイルは消さない（別の添付の本体かもしれない）。
+							$hidden = self::mark_stale( $variant );
+							$pair   = array(
+								'skip'    => 'write_failed',
+								'message' => $hidden ? 'old variant could not be checked' : 'old variant could not be checked or hidden',
+							);
+						}
 					} elseif ( 'no' === $reg_state ) {
 						$skip_code = isset( $pair['skip'] ) ? $pair['skip'] : '';
 						// 元画像が同じで、cmyk でなく、更新時刻も元画像以上のときだけ残す。差し替わっていたら（$same_src が偽）、旧画像から作ったものなので残さない。
 						// また、所有の記録が確定していない（po だけ。旧ファイルを消せなかった等で残っている）ものは、この元画像から作ったとは言えないので、残さない。
-						if ( $same_src && ! empty( $old[ $format ]['owned'] ) && ! in_array( $skip_code, array( 'cmyk', 'icc', 'lossless_avif', 'lossless_unavailable' ), true ) && ! ( 'larger' === $skip_code && self::lossless_wanted( $f['mime'], $format ) ) && filesize( $variant ) > 0 && filemtime( $variant ) >= $src_mtime ) {
+						// 「劣化なし」の設定と合わない旧ファイル（設定を切り替えた後、作り直せなかった）も残さない。
+						if ( $same_src && ! empty( $old[ $format ]['owned'] ) && ! in_array( $skip_code, array( 'cmyk', 'icc', 'lossless_avif', 'lossless_unavailable' ), true ) && ! ( 'larger' === $skip_code && self::lossless_wanted( $f['mime'], $format ) ) && ! $stale_ll && filesize( $variant ) > 0 && filemtime( $variant ) >= $src_mtime ) {
 							// まだ有効。残して、所有の記録も維持する（記録が消えると、あとで削除できなくなる）。
 							$pair = array(
 								'ok'     => true,
@@ -684,6 +876,12 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 					}
 				}
 
+				// 変換エンジンを動かした組を進みに数える。ただし、所有している write_failed の自動の再試行が、片付けまで終えて
+				// また write_failed なら数えない（毎回また失敗する組が、後ろの組を締め切りで先送りし続けないように）。
+				if ( $tried_engine && ! ( $repeat_wf && isset( $pair['skip'] ) && 'write_failed' === $pair['skip'] ) ) {
+					++$attempted;
+				}
+
 				unset( $entry[ $format ] );
 				if ( isset( $entry['po'][ $format ] ) ) {
 					unset( $entry['po'][ $format ] );
@@ -699,6 +897,12 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 					unset( $entry['skip'][ $format ] );
 					if ( empty( $entry['skip'] ) ) {
 						unset( $entry['skip'] );
+					}
+				}
+				if ( isset( $entry['sl'][ $format ] ) ) {
+					unset( $entry['sl'][ $format ] );
+					if ( empty( $entry['sl'] ) ) {
+						unset( $entry['sl'] );
 					}
 				}
 
@@ -720,7 +924,13 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 					}
 				} else {
 					$entry['skip'][ $format ] = $pair['skip'];
-					if ( in_array( $pair['skip'], self::RETRYABLE, true ) ) {
+					if ( 'larger' === $pair['skip'] && self::lossless_tracked( $f['mime'], $format ) ) {
+						// 元より大きいと決めたときの「劣化なし」の設定。設定を切り替えたら試し直す（larger_stale）。
+						$entry['sl'][ $format ] = self::lossless_wanted( $f['mime'], $format ) ? 1 : 0;
+					}
+					// この回の失敗として数えるのは、今回新しく出た失敗だけ（前回の札をそのまま返しただけの組は数えない・errors に足さない）。
+					// 失敗の札が残っていること自体は、結果の has_failed で知らせる。
+					if ( empty( $pair['kept'] ) && in_array( $pair['skip'], self::RETRYABLE, true ) ) {
 						++$err_count;
 						$result['errors'][] = $f['rel'] . ' → ' . $format . ': ' . $pair['skip'] . ( ! empty( $pair['message'] ) ? ' (' . $pair['message'] . ')' : '' );
 					}
@@ -791,10 +1001,36 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 			}
 		}
 
-		self::$created_now  = array(); // 所有記録を保存できた。片付けの対象は無くなった。
-		$result['state']    = $state;
-		$result['progress'] = $attempted;
+		self::$created_now    = array(); // 所有記録を保存できた。片付けの対象は無くなった。
+		$result['state']      = $state;
+		$result['progress']   = $attempted;
+		$result['has_failed'] = self::files_have_failed( $new_files, $formats ); // 一部の形式・サイズだけが変換できなかった添付も、失敗として数えるため。
 		return $result;
+	}
+
+	/**
+	 * 記録の中に、今の形式で「変換できなかった（再試行の対象の失敗）」札が残っているか。
+	 * 同じ添付で WebP は作れて AVIF だけ失敗した場合も、失敗として数えるために使う。
+	 *
+	 * @param array    $files   記録の files。
+	 * @param string[] $formats 今の形式。
+	 * @return bool
+	 */
+	public static function files_have_failed( $files, array $formats ) {
+		if ( ! is_array( $files ) ) {
+			return false;
+		}
+		foreach ( $files as $entry ) {
+			if ( ! is_array( $entry ) || empty( $entry['skip'] ) || ! is_array( $entry['skip'] ) ) {
+				continue;
+			}
+			foreach ( $formats as $format ) {
+				if ( isset( $entry['skip'][ $format ] ) && in_array( $entry['skip'][ $format ], self::RETRYABLE, true ) ) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -823,11 +1059,17 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 		// 前回「これは作らない」と決めた理由が今も有効なら、そのまま尊重する。
 		// ただし、自分が所有している write_failed（旧ファイルを消せなかった等）は、権限が戻った後の通常の呼び出しでも再試行する。
 		// lossless_avif は設定に依るので、ここまで来たなら(設定が変わって)もう有効ではない。作り直す。
-		if ( $same_src && ! $args['force'] && isset( $old['skip'][ $format ] ) && 'lossless_avif' !== $old['skip'][ $format ] ) {
+		// larger も、「劣化なし」の設定が決めたときと違えば試し直す（larger_stale）。
+		if ( $same_src && ! $args['force'] && isset( $old['skip'][ $format ] ) && 'lossless_avif' !== $old['skip'][ $format ] && ! self::larger_stale( $f, $format, $old ) ) {
 			$code        = $old['skip'][ $format ];
-			$retry_owned = ( $owned && 'write_failed' === $code );
+			// この回（同じ札）で一度試した組は、所有している write_failed も再試行しない（次の独立した実行では今どおり再試行する）。
+			$retry_owned = ( $owned && 'write_failed' === $code && empty( $args['tried'] ) );
 			if ( ! $retry_owned && ! ( $args['retry_failed'] && in_array( $code, self::RETRYABLE, true ) ) ) {
-				return array( 'skip' => $code );
+				// kept: 前回の札をそのまま返しただけ（この回の新しい失敗ではない）。
+				return array(
+					'skip' => $code,
+					'kept' => true,
+				);
 			}
 		}
 
@@ -864,7 +1106,8 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 				}
 				// 自分で作ったものは、強制再変換のときと、元画像が差し替わっていたときだけ作り直す。
 				// 所有の記録(owned)が確定していない(po だけ。旧ファイルを消せなかった等で残っている)ものは、この元画像から作ったとは言えないので、採用せず作り直す。
-				$outdated = ! $same_src || empty( $old[ $format ]['owned'] );
+				// 「劣化なし」の設定と合わなくなったもの（設定を切り替えた後）も作り直す。
+				$outdated = ! $same_src || empty( $old[ $format ]['owned'] ) || self::lossless_stale( $f, $format );
 				if ( $fresh && ! $outdated && ! $args['force'] ) {
 					// 新しい変換を作れたあと「使わない一覧」から外す保存に失敗していても、ここで毎回やり直す（載ったままだと配信されない）。
 					self::unmark_stale( $dest );
@@ -2250,8 +2493,11 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 				'avif' => 0,
 			),
 			'failed'      => 0,
+			'needs'       => null, // 処理が必要な画像の数（needs_work と同じ規則）。数えきれなかったら null。
 			'time'        => time(),
 		);
+		$base    = self::uploads_basedir();
+		$formats = self::active_formats();
 
 		$mimes        = Kashiwazaki_Next_Gen_Images_Engine::SOURCE_MIMES;
 		$placeholders = implode( ',', array_fill( 0, count( $mimes ), '%s' ) );
@@ -2269,29 +2515,86 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 					continue;
 				}
 				$any = false;
-				foreach ( $meta['files'] as $entry ) {
+				foreach ( $meta['files'] as $rel => $entry ) {
 					if ( ! is_array( $entry ) ) {
 						continue;
 					}
 					foreach ( array( 'webp', 'avif' ) as $format ) {
-						if ( isset( $entry[ $format ]['size'] ) ) {
-							$any = true;
-							++$stats['files'][ $format ];
-							$stats['src_bytes'][ $format ] += (int) $entry['src_size'];
-							$stats['out_bytes'][ $format ] += (int) $entry[ $format ]['size'];
+						if ( ! isset( $entry[ $format ]['size'] ) ) {
+							continue;
 						}
+						// 記録だけでなく、変換ファイルが実際にあり、空でないものだけを数える（消えた・空にされた変換を、変換済みに数えない）。
+						if ( '' !== $base && self::is_safe_relative_path( $rel ) ) {
+							$variant = $base . '/' . $rel . '.' . $format;
+							clearstatcache( true, $variant );
+							$vsize = @filesize( $variant ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+							if ( false === $vsize || 0 === (int) $vsize ) {
+								continue;
+							}
+						}
+						$any = true;
+						++$stats['files'][ $format ];
+						$stats['src_bytes'][ $format ] += (int) $entry['src_size'];
+						$stats['out_bytes'][ $format ] += (int) $entry[ $format ]['size'];
 					}
 				}
 				if ( $any ) {
 					++$stats['attachments'];
 				}
-				if ( isset( $meta['state'] ) && 'failed' === $meta['state'] ) {
+				// 失敗の数: 記録の状態（failed）ではなく、今の形式で「変換できなかった」札が残る添付を数える（一部の形式・サイズだけの失敗も数える）。
+				if ( self::files_have_failed( $meta['files'], $formats ) ) {
 					++$stats['failed'];
 				}
 			}
 		} while ( count( (array) $rows ) === 1000 );
 
+		$stats['needs'] = self::count_needs_work( $mimes, $placeholders );
+
 		set_transient( self::STATS_KEY, $stats, 10 * MINUTE_IN_SECONDS );
 		return $stats;
+	}
+
+	/**
+	 * 処理が必要な画像（needs_work が真の添付）を数える。一括変換の対象と同じ規則。
+	 *
+	 * 画像が多いサイトで画面の表示を長く止めないよう、数え上げは約 3 秒で打ち切る（フィルターで変えられる）。
+	 * 3 秒を過ぎたら、次の取得・次の 1 枚を始めない（取得・先読み 1 回分と 1 枚分は 3 秒を超えて続きうる）。
+	 * 打ち切ったら null を返す（画面は「調べきれませんでした」と出す）。
+	 *
+	 * @param string[] $mimes        画像の MIME。
+	 * @param string   $placeholders SQL のプレースホルダー。
+	 * @return int|null
+	 */
+	private static function count_needs_work( array $mimes, $placeholders ) {
+		global $wpdb;
+		$limit = (float) apply_filters( 'kashiwazaki_next_gen_images_count_needs_seconds', 3.0 );
+		$start = microtime( true );
+		$after = 0;
+		$count = 0;
+		do {
+			if ( ( microtime( true ) - $start ) >= $limit ) {
+				return null;
+			}
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQLPlaceholders
+			$ids = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'attachment' AND post_mime_type IN ($placeholders) AND ID > %d ORDER BY ID ASC LIMIT 200", array_merge( $mimes, array( $after ) ) ) );
+			if ( empty( $ids ) ) {
+				break;
+			}
+			$ids = array_map( 'intval', $ids );
+			// 投稿の本体とメタデータ（記録・添付のメタデータ）をまとめて読み込む（1 枚ずつの SQL にしない）。
+			_prime_post_caches( $ids, false, true );
+			// 投稿本体がすでにキャッシュにあると、_prime_post_caches はメタデータを先読みしない版がある（WordPress 5.9 など）。メタデータも明示的に先読みする。
+			update_meta_cache( 'post', $ids );
+			foreach ( $ids as $id ) {
+				if ( ( microtime( true ) - $start ) >= $limit ) {
+					return null;
+				}
+				if ( self::needs_work( $id ) ) {
+					++$count;
+				}
+			}
+			$after = end( $ids );
+		} while ( count( $ids ) === 200 );
+		return $count;
 	}
 }

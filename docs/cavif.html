@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cavif で AVIF を作る - Next-Gen Images マニュアル</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <button class="hamburger-btn" aria-label="メニューを開く">&#9776;</button>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2 style="color:#fff;">Next-Gen Images</h2>
+            <span class="version">v1.0.1</span>
+            <img src="images/main-visual.png" alt="" style="width:100%;border-radius:4px;margin-top:8px;">
+        </div>
+        <ul>
+            <li><a href="index.html">概要</a></li>
+            <li><a href="setup.html">インストール・初期設定</a></li>
+            <li><a href="settings.html">設定タブ</a></li>
+            <li><a href="bulk.html">一括変換タブ</a></li>
+            <li><a href="status.html">診断タブ</a></li>
+            <li><a href="media.html">メディアライブラリ</a></li>
+            <li><a href="delivery.html">サイトでの表示のしくみ</a></li>
+            <li><a href="cli.html">コマンドでの操作</a></li>
+            <li><a href="cavif.html">cavif で AVIF を作る</a></li>
+            <li><a href="troubleshooting.html">トラブルシューティング</a></li>
+        </ul>
+    </nav>
+    <main class="content">
+        <h1>cavif で AVIF を作る</h1>
+        <p class="lead">サーバーの PHP が AVIF を作れないときに、「cavif」という変換プログラムをサーバーに置いて、AVIF を作れるようにする方法です。</p>
+
+<section><h2>どんなときに使うか</h2>
+<p>「診断」タブの「変換エンジン」で、GD と Imagick の AVIF がどちらも「× 利用不可」のサーバーで使います。GD か Imagick で AVIF を作れるサーバーでは、この設定は要りません。</p>
+<table><thead><tr><th style="width:35%;">項目</th><th>内容</th></tr></thead><tbody><tr><td>cavif とは</td><td>画像を AVIF に変換する、無料で配布されているプログラムです</td></tr><tr><td>作れる形式</td><td>AVIF だけです。WebP は、これまでどおり GD か Imagick で作ります</td></tr><tr><td>必要なもの</td><td>サーバーにファイルを置けること（SSH か FTP）、PHP の GD</td></tr><tr><td>使えないサーバー</td><td>PHP から外部のプログラムを実行できない設定のサーバーでは使えません（「診断」タブに理由が表示されます）</td></tr><tr><td>設定しないとき</td><td>これまでと同じ動きです。外部のプログラムは一切実行しません</td></tr></tbody></table>
+<div class="callout callout-warning"><strong>レンタルサーバーで使う場合</strong><p>プログラムを自分で置いて動かすことは、レンタルサーバーのサポートの対象外になることがあります。ご利用のサーバーの決まりを確認してからお使いください。</p></div>
+</section>
+
+<section><h2>導入の手順</h2>
+<div class="step"><div class="step-number">1</div><div class="step-body"><h4>cavif を入手する</h4><p>配布ページ（<a href="https://github.com/kornelski/cavif-rs/releases" target="_blank" rel="noopener">https://github.com/kornelski/cavif-rs/releases</a>）から zip ファイルをダウンロードして展開します。Linux のサーバーでは、「linux-generic」フォルダの中の「cavif」というファイルを使います。</p></div></div><div class="step"><div class="step-number">2</div><div class="step-body"><h4>サーバーに置く</h4><p>「cavif」のファイルを、サーバーの<strong>公開フォルダ（public_html など）の外</strong>に置きます。ファイルと、それを置いたフォルダの権限は「755」か「700」にします。</p><table><tbody><tr><td style="width:30%;">置き場所の例</td><td>/home/アカウント名/bin/cavif</td></tr><tr><td style="width:30%;">権限</td><td>ファイルもフォルダも 755 か 700（所有者以外が書き換えられる状態では使いません）</td></tr></tbody></table></div></div><div class="step"><div class="step-number">3</div><div class="step-body"><h4>設定タブで場所を入力する</h4><p>プラグインの「設定」タブで「詳細設定」を開き、「cavif の場所」の欄に、手順 2 で置いた場所（例: /home/アカウント名/bin/cavif）を入力して、「変更を保存」を押します。欄の下に「使えます」と cavif の版（例: cavif-rs 1.8.0）が表示されれば、設定は完了です。</p><figure class="screenshot"><img src="images/screenshots/12-settings-cavif-path.png" alt="cavif の場所を入力した設定タブ" class="lightbox-trigger"><figcaption>「cavif の場所」に入力して保存したところ</figcaption></figure><p>「使えません」と表示されたときは、その横の理由を見て、下の「「使えません」と表示されたとき」の表のとおりに直します。入力できるのは、プラグインをインストールできる管理者です（<a href="settings.html">設定タブ</a>）。</p></div></div><div class="step"><div class="step-number">4</div><div class="step-body"><h4>診断タブで確かめる</h4><p>「診断」タブの「変換エンジン」に「cavif（外部プログラム）」の行があります。AVIF が「○ 利用可」になり、備考に cavif の版（例: cavif-rs 1.8.0）が表示されていれば使えます。</p><p>あわせて、同じタブの「配信テスト」で「配信テストを実行」を押し、AVIF が「正常（配信できます）」になるかを確かめます。PHP が AVIF を作れないサーバーでは、サーバーが AVIF を別の種類の画像として送っていることがあります。「注意」や「問題あり」と表示されたときは、その下に出る「自動で直す」を押します（<a href="status.html">診断タブ</a>）。</p></div></div><div class="step"><div class="step-number">5</div><div class="step-body"><h4>既存の画像を変換する</h4><p>新しい画像は、アップロードのときに AVIF も自動で作られます。すでにある画像は、「一括変換」タブの「一括変換を開始」で AVIF を追加で作ります（作成済みの WebP はそのまま使われます）。画像が多いときは <a href="cli.html">コマンドでの操作</a> が速くて確実です。</p></div></div>
+<figure class="screenshot"><img src="images/screenshots/09-status-cavif.png" alt="cavif を設定したあとの診断タブ" class="lightbox-trigger"><figcaption>cavif が使える状態の「変換エンジン」の表</figcaption></figure>
+</section>
+
+<section><h2>設定したあとの動き</h2>
+<table><thead><tr><th style="width:35%;">項目</th><th>動き</th></tr></thead><tbody><tr><td>使う順番</td><td>「変換エンジン」が「自動」のとき、AVIF は Imagick → GD → cavif の順に、作れる道具を使います。GD か Imagick で AVIF を作れるサーバーでは、cavif は予備になります</td></tr><tr><td>cavif を先に使いたいとき</td><td>「設定」タブの「詳細設定」→「変換エンジン」で「cavif（外部プログラム・AVIF のみ）」を選びます</td></tr><tr><td>画質</td><td>「設定」タブの「AVIF の画質」の数字をそのまま使います</td></tr><tr><td>変換しない画像</td><td>GD と同じです（CMYK の画像、sRGB 以外の色設定の画像、アニメーション画像。「PNG・GIF は劣化なしで変換」がオンのときの PNG・GIF）</td></tr><tr><td>1 枚にかかる時間</td><td>写真 1 枚で数秒が目安です。大きな画像ほど長くかかります</td></tr><tr><td>時間がかかりすぎたとき</td><td>管理画面からの変換では 1 枚 60 秒、コマンドでの変換では 300 秒で打ち切り、その画像の AVIF は「変換できず（エンジンのエラー）」になります。WebP と元の画像の表示には影響しません</td></tr><tr><td>サーバーへの負担</td><td>同じサーバーの他の利用者に迷惑をかけないよう、同時に使う CPU の数を 2 つまでに抑えています</td></tr></tbody></table>
+</section>
+
+<section><h2>「使えません」と表示されたとき</h2>
+<p>使えない理由は、「設定」タブの「cavif の場所」の欄の下（「使えません」の横）と、「診断」タブの「cavif（外部プログラム）」の備考に表示されます。下の表は、診断タブでの表示です。</p>
+<table><thead><tr><th style="width:45%;">備考の表示</th><th>対処</th></tr></thead><tbody><tr><td>未設定（GD・Imagick で AVIF を作れないサーバー向けの、追加の手段です）</td><td>cavif を使わない通常の状態です。使うときは、上の手順 1〜3 を行います</td></tr><tr><td>使えません: 場所は「/」から始まる絶対パスで指定してください。</td><td>入力した場所を、「/home/…/cavif」のように「/」から始まる形に直します</td></tr><tr><td>使えません: 指定した場所にファイルがありません。</td><td>入力した場所と、実際にファイルを置いた場所が同じか確かめます</td></tr><tr><td>使えません: ファイル名が「cavif」で始まるファイルを指定してください。</td><td>設定タブで入力できるのは、名前が「cavif」で始まるファイルだけです。ファイルの名前を変えている場合は、「cavif」で始まる名前に戻します（例: cavif、cavif-1.8.0）</tr><tr><td>使えません: ファイルを実行できません。実行権限を確認してください。</td><td>cavif のファイルの権限を 755 か 700 にします</td></tr><tr><td>使えません: 所有者以外が書き換えられる状態です。…</td><td>cavif のファイルと、それを置いたフォルダの権限を 755 か 700 にします</td></tr><tr><td>使えません: このサーバーの PHP では、外部プログラムを実行できません（proc_open が無効）。</td><td>サーバーの設定で禁止されています。このサーバーでは cavif を使えません（WebP だけで動きます）</td></tr><tr><td>使えません: 画像の読み込みに GD が必要です。</td><td>サーバーの PHP に GD が入っていません。サーバーの管理者に確認してください</td></tr><tr><td>使えません: PHP 7.4 以上が必要です。</td><td>サーバーの PHP を 7.4 以上にします</td></tr><tr><td>場所は指定されていますが、試しの変換に失敗しました。…</td><td>置いたファイルが cavif かどうか、サーバーの種類（Linux など）に合ったファイルかどうかを確かめます。直したあと、「動作確認をやり直す」を押します</td></tr></tbody></table>
+</section>
+
+<section><h2>使うのをやめるとき</h2>
+<table><thead><tr><th style="width:35%;">すること</th><th>結果</th></tr></thead><tbody><tr><td>「cavif の場所」の欄を空にして保存する</td><td>cavif を使わなくなります。GD・Imagick で AVIF を作れないサーバーでは、新しい AVIF は作られなくなります</td></tr><tr><td>作成済みの AVIF</td><td>そのまま残り、表示にも使われ続けます</td></tr><tr><td>cavif のファイル</td><td>欄を空にしたあとは、サーバーから削除して構いません</td></tr></tbody></table>
+</section>
+
+<section><h2>wp-config.php で指定する（場所を固定したい人向け）</h2>
+<p>ふつうは、上の手順のとおり設定タブで入力すれば足ります。cavif の場所を設定タブから変えられないようにしたいときや、設定タブで入力できないサイトでは、WordPress の wp-config.php で指定することもできます。</p>
+<p>wp-config.php を開き、「編集が必要なのはここまでです」（英語版では「That's all, stop editing!」）の行より上に、次の 1 行を足します。「/home/アカウント名/bin/cavif」の部分は、cavif を置いた場所に書き換えます。</p>
+<pre><code>define( 'KASHIWAZAKI_NEXT_GEN_IMAGES_CAVIF', '/home/アカウント名/bin/cavif' );</code></pre>
+<table><thead><tr><th style="width:35%;">項目</th><th>動き</th></tr></thead><tbody><tr><td>設定タブの「cavif の場所」</td><td>入力できなくなり、wp-config.php に書いた場所が表示されます。設定タブに保存してあった場所は使いません</td></tr><tr><td>ファイルの名前</td><td>この方法では、名前が「cavif」で始まらないファイルも指定できます</td></tr><tr><td>cavif を使わせないとき</td><td>場所の代わりに false を書くと（下の例）、設定タブに場所が保存されていても、cavif を使いません</td></tr><tr><td>設定タブで入力できないサイト</td><td>プラグインのインストールを禁止しているサイトや、マルチサイトの各サイトでは、設定タブの欄を変更できません。その場合は、この方法で指定します</td></tr><tr><td>やめるとき</td><td>足した 1 行を消します。消したあとは、設定タブの欄の内容が使われます</td></tr></tbody></table>
+<pre><code>define( 'KASHIWAZAKI_NEXT_GEN_IMAGES_CAVIF', false );</code></pre>
+<div class="callout callout-warning"><strong>wp-config.php を書き換えるとき</strong><p>書き換える前に、元のファイルを控えてください。1 文字の間違いで、サイト全体が表示されなくなることがあります。</p></div>
+</section>
+
+        <nav class="page-nav">
+            <a href="cli.html" class="prev">&laquo; コマンドでの操作</a>
+            <a href="troubleshooting.html" class="next">トラブルシューティング &raquo;</a>
+        </nav>
+        <footer class="manual-footer">
+            <p>作者: <a href="https://www.tsuyoshikashiwazaki.jp/profile/" target="_blank" rel="noopener">柏崎剛（Tsuyoshi Kashiwazaki）</a></p>
+            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.1</p>
+        </footer>
+    </main>
+    <div class="lightbox"></div>
+    <script src="js/manual.js"></script>
+</body>
+</html>

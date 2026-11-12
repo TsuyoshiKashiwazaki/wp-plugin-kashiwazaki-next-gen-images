@@ -140,8 +140,12 @@ final class Kashiwazaki_Next_Gen_Images_Queue {
 				$id,
 				array( 'deadline' => Kashiwazaki_Next_Gen_Images_Engine::deadline() )
 			);
-			if ( in_array( $result['state'], array( 'partial', 'locked' ), true ) ) {
-				// 無限に再予約しないよう回数を数える。上限に達したら、一括変換に任せる。
+			if ( 'partial' === $result['state'] && ! empty( $result['progress'] ) ) {
+				// 時間内に全部は終わらなかったが、進んではいる（サイズの多い画像を何回かに分けて変換している）。回数を戻して続きを予約する。
+				delete_post_meta( $id, self::ATTEMPT_META );
+				self::schedule( $id, 30 );
+			} elseif ( in_array( $result['state'], array( 'partial', 'locked' ), true ) ) {
+				// 進まない（別の処理が変換中・1 つも進められない）。無限に再予約しないよう回数を数える。上限に達したら、一括変換に任せる。
 				$attempts = (int) get_post_meta( $id, self::ATTEMPT_META, true );
 				if ( $attempts < self::MAX_ATTEMPTS ) {
 					update_post_meta( $id, self::ATTEMPT_META, $attempts + 1 );

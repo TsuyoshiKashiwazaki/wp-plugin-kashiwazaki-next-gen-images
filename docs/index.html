@@ -11,7 +11,7 @@
     <nav class="sidebar">
         <div class="sidebar-header">
             <h2 style="color:#fff;">Next-Gen Images</h2>
-            <span class="version">v1.0.0</span>
+            <span class="version">v1.0.1</span>
             <img src="images/main-visual.png" alt="" style="width:100%;border-radius:4px;margin-top:8px;">
         </div>
         <ul>
@@ -23,6 +23,7 @@
             <li><a href="media.html">メディアライブラリ</a></li>
             <li><a href="delivery.html">サイトでの表示のしくみ</a></li>
             <li><a href="cli.html">コマンドでの操作</a></li>
+            <li><a href="cavif.html">cavif で AVIF を作る</a></li>
             <li><a href="troubleshooting.html">トラブルシューティング</a></li>
         </ul>
     </nav>
@@ -45,9 +46,9 @@
 <h3>GEO（AI 検索）</h3>
 <p>AI が参照するのは主にページの文章と HTML の構造です。このプラグインは文章や見出しを変えないため、AI 検索への影響は「ページが速く表示される」ことにとどまります。</p></section>
 <section><h2>目次</h2>
-<table><thead><tr><th style="width:35%;">ページ</th><th>内容</th></tr></thead><tbody><tr><td><a href="setup.html">インストール・初期設定</a></td><td>インストールから、最初に確認する設定、既存画像の変換まで</td></tr><tr><td><a href="settings.html">設定タブ</a></td><td>変換する形式・画質・自動変換・表示・詳細設定のすべての項目</td></tr><tr><td><a href="bulk.html">一括変換タブ</a></td><td>既存の画像をまとめて変換する・変換したファイルを削除する</td></tr><tr><td><a href="status.html">診断タブ</a></td><td>サーバーの対応状況・配信テスト・変換の実績の見方</td></tr><tr><td><a href="media.html">メディアライブラリ</a></td><td>画像ごとの変換状態の見方と、1 枚ずつの変換</td></tr><tr><td><a href="delivery.html">サイトでの表示のしくみ</a></td><td>どの画像が切り替わり、どの画像が切り替わらないか</td></tr><tr><td><a href="cli.html">コマンドでの操作</a></td><td>サーバーのコマンド（WP-CLI）で変換する方法</td></tr><tr><td><a href="troubleshooting.html">トラブルシューティング</a></td><td>困ったときの確認と対処、メッセージの意味</td></tr></tbody></table></section>
+<table><thead><tr><th style="width:35%;">ページ</th><th>内容</th></tr></thead><tbody><tr><td><a href="setup.html">インストール・初期設定</a></td><td>インストールから、最初に確認する設定、既存画像の変換まで</td></tr><tr><td><a href="settings.html">設定タブ</a></td><td>変換する形式・画質・自動変換・表示・詳細設定のすべての項目</td></tr><tr><td><a href="bulk.html">一括変換タブ</a></td><td>既存の画像をまとめて変換する・変換したファイルを削除する</td></tr><tr><td><a href="status.html">診断タブ</a></td><td>サーバーの対応状況・配信テスト・変換の実績の見方</td></tr><tr><td><a href="media.html">メディアライブラリ</a></td><td>画像ごとの変換状態の見方と、1 枚ずつの変換</td></tr><tr><td><a href="delivery.html">サイトでの表示のしくみ</a></td><td>どの画像が切り替わり、どの画像が切り替わらないか</td></tr><tr><td><a href="cli.html">コマンドでの操作</a></td><td>サーバーのコマンド（WP-CLI）で変換する方法</td></tr><tr><td><a href="cavif.html">cavif で AVIF を作る</a></td><td>サーバーの PHP が AVIF を作れないときに、変換プログラムを追加して AVIF を作る方法</td></tr><tr><td><a href="troubleshooting.html">トラブルシューティング</a></td><td>困ったときの確認と対処、メッセージの意味</td></tr></tbody></table></section>
 <section><h2>動作要件</h2>
-<table><thead><tr><th style="width:35%;">項目</th><th>要件</th></tr></thead><tbody><tr><td>WordPress</td><td>5.9 以上</td></tr><tr><td>PHP</td><td>7.4 以上</td></tr><tr><td>画像を作る機能</td><td>PHP の GD または Imagick（どちらか一方で動きます）</td></tr><tr><td>AVIF</td><td>PHP 8.1 以上で AVIF に対応した GD、または AVIF に対応した Imagick が必要です。無ければ WebP だけで動きます</td></tr><tr><td>ブラウザ</td><td>どのブラウザでも表示できます（WebP・AVIF に対応していないブラウザには元の画像を表示します）</td></tr></tbody></table></section>
+<table><thead><tr><th style="width:35%;">項目</th><th>要件</th></tr></thead><tbody><tr><td>WordPress</td><td>5.9 以上</td></tr><tr><td>PHP</td><td>7.4 以上</td></tr><tr><td>画像を作る機能</td><td>PHP の GD または Imagick（どちらか一方で動きます）</td></tr><tr><td>AVIF</td><td>PHP 8.1 以上で AVIF に対応した GD、または AVIF に対応した Imagick が必要です。無ければ WebP だけで動きます。どちらも無いサーバーでは、変換プログラムの cavif を追加して AVIF を作ることもできます（<a href="cavif.html">cavif で AVIF を作る</a>）</td></tr><tr><td>ブラウザ</td><td>どのブラウザでも表示できます（WebP・AVIF に対応していないブラウザには元の画像を表示します）</td></tr></tbody></table></section>
 
         <nav class="page-nav">
             <span></span>
@@ -55,7 +56,7 @@
         </nav>
         <footer class="manual-footer">
             <p>作者: <a href="https://www.tsuyoshikashiwazaki.jp/profile/" target="_blank" rel="noopener">柏崎剛（Tsuyoshi Kashiwazaki）</a></p>
-            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.0</p>
+            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.1</p>
         </footer>
     </main>
     <div class="lightbox"></div>

@@ -51,6 +51,11 @@
 .kashiwazaki-next-gen-images-row-control textarea { min-width: 260px; }
 .kashiwazaki-next-gen-images-row:has(textarea) { align-items: flex-start; }
 .kashiwazaki-next-gen-images-row:has(textarea) .kashiwazaki-next-gen-images-row-control { flex: 1 1 320px; }
+.kashiwazaki-next-gen-images-row:has(.kashiwazaki-next-gen-images-pathfield) { align-items: flex-start; }
+.kashiwazaki-next-gen-images-row:has(.kashiwazaki-next-gen-images-pathfield) .kashiwazaki-next-gen-images-row-control { flex: 1 1 320px; }
+.kashiwazaki-next-gen-images-pathfield { width: 100%; min-width: 0; }
+.kashiwazaki-next-gen-images-pathfield input[type="text"] { width: 100%; min-width: 0; margin: 0; }
+.kashiwazaki-next-gen-images-pathfield .kashiwazaki-next-gen-images-hint { margin: 6px 0 0; overflow-wrap: anywhere; }
 .kashiwazaki-next-gen-images-row:has(.kashiwazaki-next-gen-images-range) .kashiwazaki-next-gen-images-row-control { flex: 1 1 260px; flex-wrap: wrap; justify-content: stretch; }
 .kashiwazaki-next-gen-images-row:has(.kashiwazaki-next-gen-images-chips) .kashiwazaki-next-gen-images-row-control { flex: 1 1 320px; justify-content: flex-start; }
 .kashiwazaki-next-gen-images-hint { margin: 8px 0 2px; color: var(--kashiwazaki-next-gen-images-muted); font-size: 12px; }
@@ -155,8 +160,11 @@
 .kashiwazaki-next-gen-images-job-notice p { margin: 0; }
 
 /* ---- 診断などの共通 ---- */
-.kashiwazaki-next-gen-images-ok { color: #007017; font-weight: 600; }
-.kashiwazaki-next-gen-images-ng { color: #b32d2e; }
+/* 「○ 利用可」「× 利用不可」は、隣の欄の文章が長くても途中で折り返さない。 */
+.kashiwazaki-next-gen-images-ok { color: #007017; font-weight: 600; white-space: nowrap; }
+.kashiwazaki-next-gen-images-ng { color: #b32d2e; white-space: nowrap; }
+/* 変換エンジンの表の「備考」は、長い文字列（ライブラリの版・URL・使えない理由）でも欄の中で折り返す（狭い画面で表がはみ出さないように）。 */
+.kashiwazaki-next-gen-images-engines td:last-child { overflow-wrap: anywhere; }
 .kashiwazaki-next-gen-images-code { background: #f6f7f7; border: 1px solid #dcdcde; padding: 8px 12px; overflow: auto; }
 .kashiwazaki-next-gen-images-inline { display: inline-block; margin: 0 14px 6px 0; }
 .column-kashiwazaki_next_gen_images { width: 170px; }

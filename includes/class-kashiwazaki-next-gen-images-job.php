@@ -442,7 +442,8 @@ final class Kashiwazaki_Next_Gen_Images_Job {
 						}
 					} else {
 						$job['tries'] = 0;
-						if ( 'failed' === $res['state'] ) {
+						// 全部が失敗した添付だけでなく、一部の形式・サイズだけが変換できなかった添付も、失敗として数える。
+						if ( 'failed' === $res['state'] || ! empty( $res['has_failed'] ) ) {
 							++$job['failed'];
 						}
 						array_shift( $job['queue'] );

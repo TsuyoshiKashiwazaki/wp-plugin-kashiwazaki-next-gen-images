@@ -74,7 +74,7 @@ final class Kashiwazaki_Next_Gen_Images_CLI {
 		$stats = Kashiwazaki_Next_Gen_Images_Converter::stats( true );
 		$fmts  = Kashiwazaki_Next_Gen_Images_Engine::available_formats();
 		WP_CLI::line( 'Available formats on this server: ' . ( $fmts ? implode( ', ', $fmts ) : '(none)' ) );
-		WP_CLI::line( sprintf( 'Images: %d / converted: %d / failed: %d', $stats['images'], $stats['attachments'], $stats['failed'] ) );
+		WP_CLI::line( sprintf( 'Images: %d / converted: %d / failed: %d / needs work: %s', $stats['images'], $stats['attachments'], $stats['failed'], null === $stats['needs'] ? 'unknown (could not finish counting in time)' : (string) (int) $stats['needs'] ) );
 		foreach ( array( 'webp', 'avif' ) as $f ) {
 			WP_CLI::line( sprintf( '%s: %d files, %s -> %s', strtoupper( $f ), $stats['files'][ $f ], size_format( $stats['src_bytes'][ $f ] ), size_format( $stats['out_bytes'][ $f ] ) ) );
 		}
@@ -129,14 +129,16 @@ final class Kashiwazaki_Next_Gen_Images_CLI {
 				$force_token = $res['force_token'];
 				$converted   += $res['converted'];
 				$saved       += $res['saved'];
+				// 各回のエラーを、その都度知らせる（途中の回だけで起きた失敗も落とさない。状態が done でも、一部の形式・サイズの失敗はある）。
+				foreach ( (array) $res['errors'] as $error ) {
+					WP_CLI::warning( "ID {$id}: {$error}" );
+				}
 				++$tries;
 			} while ( in_array( $res['state'], array( 'partial' ), true ) && $tries < 5 );
 
-			if ( 'failed' === $res['state'] ) {
+			// 失敗の数: 全部が失敗した添付だけでなく、一部の形式・サイズだけが変換できなかった添付も数える。
+			if ( 'failed' === $res['state'] || ! empty( $res['has_failed'] ) ) {
 				++$failed;
-				foreach ( $res['errors'] as $error ) {
-					WP_CLI::warning( "ID {$id}: {$error}" );
-				}
 			}
 			if ( 'locked' === $res['state'] ) { // 同じ添付を別の処理(画面・cron・一括処理)が変換中。数えず黙って次へ進むと、未変換のまま「全部終わった」ように見える。
 				++$locked;

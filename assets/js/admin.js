@@ -130,6 +130,9 @@
 			if (cell && d[f]) { cell.textContent = d[f]; }
 		});
 	});
+	// 種類の指定を自動で直す・消す。終わったら、表の表示を最新にするため読み込み直す。
+	bindSimple('mime-fix', 'mime_fix', 'mime-fix-result', function () { window.location.reload(); });
+	bindSimple('mime-unfix', 'mime_unfix', 'mime-unfix-result', function () { window.location.reload(); });
 
 	/* ---- 一括処理（変換・削除）----
 	 * 進み具合はサーバーに保存されている。ここでは「少しずつ進める」呼び出しを繰り返し、結果を表示するだけ。

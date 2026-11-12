@@ -11,7 +11,7 @@
     <nav class="sidebar">
         <div class="sidebar-header">
             <h2 style="color:#fff;">Next-Gen Images</h2>
-            <span class="version">v1.0.0</span>
+            <span class="version">v1.0.1</span>
             <img src="images/main-visual.png" alt="" style="width:100%;border-radius:4px;margin-top:8px;">
         </div>
         <ul>
@@ -23,6 +23,7 @@
             <li><a href="media.html">メディアライブラリ</a></li>
             <li><a href="delivery.html">サイトでの表示のしくみ</a></li>
             <li><a href="cli.html">コマンドでの操作</a></li>
+            <li><a href="cavif.html">cavif で AVIF を作る</a></li>
             <li><a href="troubleshooting.html">トラブルシューティング</a></li>
         </ul>
     </nav>
@@ -33,7 +34,7 @@
 <figure class="screenshot"><img src="images/screenshots/01-settings-full.png" alt="設定タブの全体" class="lightbox-trigger"><figcaption>設定タブ。4 枚のカードと「詳細設定」、下に「変更を保存」があります</figcaption></figure>
 <section><h2>画面の構成</h2>
 <figure class="infographic"><img src="images/infographics/settings-map.png" alt="設定タブの 5 つの区画" class="lightbox-trigger"><figcaption>設定タブは 4 枚のカードと「詳細設定」でできています</figcaption></figure>
-<table><thead><tr><th style="width:35%;">区画</th><th>ここで決めること</th></tr></thead><tbody><tr><td>変換する形式</td><td>WebP・AVIF のどちらを作り、表示するか</td></tr><tr><td>画質と軽さ</td><td>画質の数値、PNG・GIF の扱い、軽くならないときの扱い</td></tr><tr><td>新しい画像の自動変換</td><td>アップロードしたときに変換するか、いつ変換するか</td></tr><tr><td>サイトでの表示</td><td>変換した画像を表示するか、どこまで切り替えるか</td></tr><tr><td>詳細設定</td><td>通常は変更不要な項目（変換エンジン、最大サイズ、除外の指定など）</td></tr></tbody></table>
+<table><thead><tr><th style="width:35%;">区画</th><th>ここで決めること</th></tr></thead><tbody><tr><td>変換する形式</td><td>WebP・AVIF のどちらを作り、表示するか</td></tr><tr><td>画質と軽さ</td><td>画質の数値、PNG・GIF の扱い、軽くならないときの扱い</td></tr><tr><td>新しい画像の自動変換</td><td>アップロードしたときに変換するか、いつ変換するか</td></tr><tr><td>サイトでの表示</td><td>変換した画像を表示するか、どこまで切り替えるか</td></tr><tr><td>詳細設定</td><td>通常は変更不要な項目（変換エンジン、cavif の場所、最大サイズ、除外の指定など）</td></tr></tbody></table>
 <p>画面の上には、プラグインの名前・版と「元の画像は削除も変更もされません」の表示があり、その下に「設定」「一括変換」「診断」の 3 つのタブがあります。</p><p>各項目の右の「？」にマウスを重ねる（スマートフォンではタップする）と、その項目の説明が表示されます。Esc キーで閉じます。</p></section>
 
 <section><h2>変換する形式</h2><p>どの形式の画像を作るかを決めます。</p>
@@ -44,10 +45,10 @@
 </section>
 
 <section><h2>画質と軽さ</h2><p>数字が大きいほどきれいで、ファイルも大きくなります。</p>
-<h3>WebP の画質</h3><p>WebP の画質を 1〜100 で決めます。80 前後が目安です。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>82</td></tr><tr><td style="width:30%;">入力できる範囲</td><td>1〜100（スライダーで「軽い」〜「きれい」）</td></tr></tbody></table>
+<h3>WebP の画質</h3><p>WebP の画質を 1〜100 で決めます。80 前後が目安です。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>82</td></tr><tr><td style="width:30%;">入力できる範囲</td><td>1〜100（スライダーで「軽い」〜「きれい」）</td></tr><tr><td style="width:30%;">使わない場合</td><td>「PNG・GIF は劣化なしで変換」がオンのときの PNG・GIF には使いません（劣化なしで作るため、画質を変えても同じ WebP になります）</td></tr></tbody></table>
 <h3>AVIF の画質</h3><p>AVIF の画質を 1〜100 で決めます。AVIF は低めの数字でもきれいです。60 前後が目安です。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>60</td></tr><tr><td style="width:30%;">入力できる範囲</td><td>1〜100</td></tr></tbody></table>
 <div class="callout callout-warning"><strong>画質を変えたあと</strong><p>画質を変えても、すでに作った画像は作り直されません。作り直すには「一括変換」タブで「すべて作り直す」をオンにして一括変換を開始してください。</p></div>
-<h3>PNG・GIF は劣化なしで変換</h3><p>PNG・GIF を、見た目が変わらない「劣化なし」の WebP に変換します。ロゴ・図・スクリーンショットの文字や線が崩れません。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>オン</td></tr><tr><td style="width:30%;">オンのとき</td><td>PNG・GIF は劣化なしの WebP だけを作ります。AVIF は劣化なしで作れないため、PNG・GIF の AVIF は作らず、すでにある AVIF も表示に使いません</td></tr><tr><td style="width:30%;">オフのとき</td><td>PNG・GIF も、上の画質の設定で WebP・AVIF を作ります</td></tr><tr><td style="width:30%;">注意</td><td>写真の PNG では、あまり軽くならないことがあります。サーバーによっては劣化なしの WebP を作れず、「変換なし」になります</td></tr></tbody></table>
+<h3>PNG・GIF は劣化なしで変換</h3><p>PNG・GIF を、見た目が変わらない「劣化なし」の WebP に変換します。ロゴ・図・スクリーンショットの文字や線が崩れません。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>オン</td></tr><tr><td style="width:30%;">オンのとき</td><td>PNG・GIF は劣化なしの WebP だけを作ります。このプラグインは PNG・GIF の AVIF を劣化なしで作れないため、PNG・GIF の AVIF は作らず、すでにある AVIF も表示に使いません</td></tr><tr><td style="width:30%;">オフのとき</td><td>PNG・GIF も、上の画質の設定で WebP・AVIF を作ります</td></tr><tr><td style="width:30%;">注意</td><td>写真の PNG では、あまり軽くならないことがあります。サーバーによっては劣化なしの WebP を作れず、「変換なし」になります</td></tr><tr><td style="width:30%;">切り替えたあと</td><td>設定を保存したら、「一括変換」タブで「一括変換を開始」を押してください。すでにある PNG・GIF の WebP が今の設定で作り直され、AVIF が作られる（オフにしたとき）、または片付けられます（オンにしたとき）。「すべて作り直す」は不要です</td></tr></tbody></table>
 <h3>軽くならなければ保存しない</h3><p>変換したファイルが元の画像より大きい・同じ大きさなら、捨てて元の画像のまま表示します。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>オン</td></tr><tr><td style="width:30%;">オンのとき</td><td>軽くならない画像は「変換なし（軽くならないため）」になります</td></tr><tr><td style="width:30%;">オフのとき</td><td>大きくなっても保存し、表示に使います</td></tr></tbody></table>
 <div class="callout callout-tip"><strong>おすすめ</strong><p>画質は初期値のまま、2 つのスイッチはオンのままがおすすめです。</p></div>
 </section>
@@ -71,8 +72,12 @@
 <section><h2>詳細設定</h2><p>「詳細設定」を押すと開きます。通常は変更不要です。</p>
 <figure class="screenshot"><img src="images/screenshots/02-settings-advanced.png" alt="詳細設定を開いた設定タブ" class="lightbox-trigger"><figcaption>「詳細設定」を開いたところ</figcaption></figure>
 <h3>変換エンジン</h3><p>画像を作る道具を選びます。指定した道具で失敗したときは、使える別の道具で自動的にやり直します。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>自動（おすすめ）</td></tr></tbody></table>
-<table><thead><tr><th style="width:35%;">選択肢</th><th>動き</th></tr></thead><tbody><tr><td>自動（おすすめ）</td><td>使える道具を、Imagick → GD の順に使います</td></tr><tr><td>GD</td><td>GD を先に使い、失敗したら Imagick で作り直します</td></tr><tr><td>Imagick</td><td>Imagick を先に使い、失敗したら GD で作り直します</td></tr></tbody></table>
+<table><thead><tr><th style="width:35%;">選択肢</th><th>動き</th></tr></thead><tbody><tr><td>自動（おすすめ）</td><td>使える道具を、Imagick → GD の順に使います。cavif を設定してあるときは、AVIF に限り、そのあとに cavif を使います</td></tr><tr><td>GD</td><td>GD を先に使い、失敗したら使える別の道具で作り直します</td></tr><tr><td>Imagick</td><td>Imagick を先に使い、失敗したら使える別の道具で作り直します</td></tr><tr><td>cavif（外部プログラム・AVIF のみ）</td><td>AVIF を作るときに cavif を先に使い、失敗したら使える別の道具で作り直します。WebP の作り方は「自動」と同じです。cavif を設定していないときは「自動」と同じ動きになります（<a href="cavif.html">cavif で AVIF を作る</a>）</td></tr></tbody></table>
 <p>指定した道具がその形式を作れないときは、「自動」と同じ動きになります。</p>
+<h3>cavif の場所</h3><p>サーバーの PHP が AVIF を作れないときに使う、変換プログラム「cavif」の場所を入力する欄です。cavif を使わないサイトでは、空欄のままにします。cavif の入手からの手順は <a href="cavif.html">cavif で AVIF を作る</a> を参照してください。</p>
+<figure class="screenshot"><img src="images/screenshots/12-settings-cavif-path.png" alt="cavif の場所の欄" class="lightbox-trigger"><figcaption>場所を入力して保存すると、欄の下に「使えます」と表示されます</figcaption></figure>
+<table><tbody><tr><td style="width:30%;">初期値</td><td>空欄（cavif を使いません。外部のプログラムは実行しません）</td></tr><tr><td style="width:30%;">入力するもの</td><td>サーバーに置いた cavif のファイルの場所です。「/」から始まる形で入力します（例: /home/アカウント名/bin/cavif）</td></tr><tr><td style="width:30%;">保存したあと</td><td>欄の下に「使えます」と cavif の版（例: cavif-rs 1.8.0）が表示されれば、AVIF を作れます。「使えません」のときは、その横に理由が表示されます</td></tr><tr><td style="width:30%;">やめるとき</td><td>欄を空にして保存します</td></tr><tr><td style="width:30%;">入力できるファイル</td><td>名前が「cavif」で始まるファイルだけです（例: cavif、cavif-1.8.0）。別の名前のプログラムを入力しても、実行しません</td></tr><tr><td style="width:30%;">入力できる人</td><td>プラグインをインストールできる管理者だけです。それ以外の人には、入力できない状態で表示されます</td></tr></tbody></table>
+<table><thead><tr><th style="width:45%;">欄の下の表示</th><th>意味</th></tr></thead><tbody><tr><td>空欄のときは、cavif を使いません。</td><td>場所を入力していない、通常の状態です</td></tr><tr><td>「使えます」と cavif の版</td><td>試しの変換までできた状態です。AVIF を作れます</td></tr><tr><td>「使えません」と理由</td><td>入力した場所の cavif を使えない状態です。WebP と元の画像の表示には影響しません。理由ごとの対処は <a href="cavif.html">cavif で AVIF を作る</a> にあります</td></tr><tr><td>wp-config.php で指定されているため、ここでは変更できません。</td><td>サーバーの設定ファイルで場所を固定しているサイトです。欄には、その場所が表示されます</td></tr><tr><td>wp-config.php で、cavif を使わない設定になっています。ここでは変更できません。</td><td>サーバーの設定ファイルで、cavif を使わないと決めているサイトです</td></tr><tr><td>この欄を変更できるのは、プラグインをインストールできる管理者だけです。</td><td>いまログインしている人には、変更する権限がありません</td></tr></tbody></table>
 <h3>変換する画像の最大サイズ</h3><p>これより大きな画像は、サーバーのメモリ不足を避けるため変換しません。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>30 百万画素</td></tr><tr><td style="width:30%;">入力できる範囲</td><td>1〜200 百万画素</td></tr><tr><td style="width:30%;">超えた画像</td><td>「変換なし（画素数が上限超過）」になり、元の画像のまま表示します</td></tr><tr><td style="width:30%;">目安</td><td>共用レンタルサーバーでは 30 前後が安全です</td></tr></tbody></table>
 <h3>変換しない画像サイズ</h3><p>チェックしたサイズ（フルサイズ、thumbnail、medium など）は変換しません。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>どれもチェックなし</td></tr><tr><td style="width:30%;">注意</td><td>チェックしても、すでに作ったそのサイズの変換ファイルは消えず、表示にも使われ続けます。通常は何もチェックしなくて構いません</td></tr></tbody></table>
 <h3>除外する CSS クラス</h3><p>このクラスが付いた画像は、元のまま表示します。1 行に 1 つ書きます。</p><table><tbody><tr><td style="width:30%;">初期値</td><td>no-nextgen と skip-lazy</td></tr><tr><td style="width:30%;">書ける文字</td><td>英数字・「_」・「-」。最大 100 行。大文字と小文字は区別しません</td></tr><tr><td style="width:30%;">使う場面</td><td>スライダーなど、画像のまわりの要素を JavaScript で探す機能に不具合が出たとき</td></tr></tbody></table>
@@ -95,7 +100,7 @@
         </nav>
         <footer class="manual-footer">
             <p>作者: <a href="https://www.tsuyoshikashiwazaki.jp/profile/" target="_blank" rel="noopener">柏崎剛（Tsuyoshi Kashiwazaki）</a></p>
-            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.0</p>
+            <p>プラグイン: Kashiwazaki Next-Gen Images v1.0.1</p>
         </footer>
     </main>
     <div class="lightbox"></div>

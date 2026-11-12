@@ -51,7 +51,8 @@ final class Kashiwazaki_Next_Gen_Images_Settings {
 			'avif_quality'        => 60,
 			'png_lossless'        => 1,
 			'only_if_smaller'     => 1,
-			'engine_preference'   => 'auto', // auto|gd|imagick。
+			'engine_preference'   => 'auto', // auto|gd|imagick|cavif。
+			'cavif_path'          => '', // cavif（外部の AVIF 変換プログラム）の場所。空なら使わない。
 			'max_megapixels'      => 30,
 			'auto_convert'        => 1,
 			'convert_timing'      => 'immediate', // immediate|background。
@@ -93,6 +94,10 @@ final class Kashiwazaki_Next_Gen_Images_Settings {
 	 */
 	public static function flush_cache() {
 		self::$cache = null;
+		// 設定（形式・劣化なし・サイズ）が変わると「処理が必要」の数も変わるので、集計の一時保存を捨てる。
+		if ( class_exists( 'Kashiwazaki_Next_Gen_Images_Converter' ) ) {
+			delete_transient( Kashiwazaki_Next_Gen_Images_Converter::STATS_KEY );
+		}
 	}
 
 	/**
@@ -163,7 +168,15 @@ final class Kashiwazaki_Next_Gen_Images_Settings {
 		$out['avif_quality'] = self::clamp_int( isset( $input['avif_quality'] ) ? $input['avif_quality'] : null, 1, 100, $defaults['avif_quality'] );
 		$out['max_megapixels'] = self::clamp_int( isset( $input['max_megapixels'] ) ? $input['max_megapixels'] : null, 1, 200, $defaults['max_megapixels'] );
 
-		$out['engine_preference'] = self::pick( isset( $input['engine_preference'] ) ? $input['engine_preference'] : '', array( 'auto', 'gd', 'imagick' ), $defaults['engine_preference'] );
+		$out['engine_preference'] = self::pick( isset( $input['engine_preference'] ) ? $input['engine_preference'] : '', array( 'auto', 'gd', 'imagick', 'cavif' ), $defaults['engine_preference'] );
+
+		// cavif（外部の AVIF 変換プログラム）の場所。空欄なら使わない。
+		// 変えられるのは、プラグインをインストールできる人だけ（can_set_cavif_path）。
+		// 欄が送られてこないとき（wp-config.php で指定していて入力できないとき）・変える権限が無いときは、保存済みの値を保つ。
+		$saved_path        = self::get( 'cavif_path' );
+		$saved_path        = is_string( $saved_path ) ? $saved_path : '';
+		$out['cavif_path'] = ( isset( $input['cavif_path'] ) && self::can_set_cavif_path() ) ? self::sanitize_path( $input['cavif_path'], $saved_path ) : $saved_path;
+
 		$out['convert_timing']    = self::pick( isset( $input['convert_timing'] ) ? $input['convert_timing'] : '', array( 'immediate', 'background' ), $defaults['convert_timing'] );
 		$out['delivery_scope']    = self::pick( isset( $input['delivery_scope'] ) ? $input['delivery_scope'] : '', array( 'content', 'page' ), $defaults['delivery_scope'] );
 
@@ -182,7 +195,64 @@ final class Kashiwazaki_Next_Gen_Images_Settings {
 		$out['exclude_classes'] = self::sanitize_lines( isset( $input['exclude_classes'] ) ? $input['exclude_classes'] : '', true );
 		$out['exclude_urls']    = self::sanitize_lines( isset( $input['exclude_urls'] ) ? $input['exclude_urls'] : '', false );
 
+		// 「PNG・GIF は劣化なしで変換」を切り替えたときは、すでにある画像に反映するには一括変換が要ることを知らせる。
+		if ( function_exists( 'add_settings_error' ) && (int) $out['png_lossless'] !== (int) self::get( 'png_lossless' ) ) {
+			$bulk_url = add_query_arg(
+				array(
+					'page' => KASHIWAZAKI_NEXT_GEN_IMAGES_SLUG,
+					'tab'  => 'bulk',
+				),
+				admin_url( 'admin.php' )
+			);
+			add_settings_error(
+				self::OPTION,
+				'kashiwazaki_next_gen_images_png_lossless_changed',
+				sprintf(
+					/* translators: %s: URL of the bulk conversion tab */
+					__( '「PNG・GIF は劣化なしで変換」を切り替えました。すでにある画像に反映するには、<a href="%s">「一括変換」タブ</a>で「一括変換を開始」を押してください（「すべて作り直す」は不要です）。', 'wp-plugin-kashiwazaki-next-gen-images' ),
+					esc_url( $bulk_url )
+				),
+				'info'
+			);
+		}
+
 		return $out;
+	}
+
+	/**
+	 * いまの利用者が、設定画面で cavif（外部の AVIF 変換プログラム）の場所を変えられるか。
+	 *
+	 * 変えられるのは、プラグインをインストールできる人だけ。プラグインをインストールできる人は、
+	 * もともとサーバーでプログラムを動かせるので、この欄で新しくできることは増えない。
+	 * マルチサイトの各サイトの管理者や、ファイルの変更を禁止しているサイト（DISALLOW_FILE_MODS）の管理者は変えられない
+	 * （その場合は wp-config.php で指定する）。
+	 *
+	 * @return bool
+	 */
+	public static function can_set_cavif_path() {
+		return current_user_can( 'install_plugins' );
+	}
+
+	/**
+	 * 設定画面で入力されたファイルの場所を確かめる。
+	 *
+	 * 中身は書き換えない（書き換えると、別の場所を指すことになるため）。受け付けられない値のときは、保存済みの値のままにする。
+	 * 実際に使えるかどうか（絶対パスか・ファイルがあるか・実行できるか・権限は安全か）は、使うときに Engine::cavif_status() が確かめる。
+	 *
+	 * @param mixed  $value    入力。
+	 * @param string $fallback 受け付けられないときに使う値（保存済みの値）。
+	 * @return string
+	 */
+	private static function sanitize_path( $value, $fallback ) {
+		if ( ! is_string( $value ) ) {
+			return $fallback;
+		}
+		$value = trim( $value );
+		// 制御文字（改行・NUL など）を含むもの・長すぎるものは受け付けない。
+		if ( strlen( $value ) > 1024 || 1 === preg_match( '/[\x00-\x1F\x7F]/', $value ) ) {
+			return $fallback;
+		}
+		return $value;
 	}
 
 	/**
