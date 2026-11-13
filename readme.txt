@@ -4,7 +4,7 @@ Tags: webp, avif, image, performance, optimization
 Requires at least: 5.9
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,6 +85,10 @@ AddType image/avif .avif
 `wp kashiwazaki-next-gen-images convert`（全件）、`wp kashiwazaki-next-gen-images convert 12 34 --force`（指定した画像を作り直す）、`wp kashiwazaki-next-gen-images status`（状況）が使えます。
 
 == Changelog ==
+
+= 1.0.2 =
+* cavif で AVIF を作るとき、1 回の処理の締め切りを見ずに、1 枚の上限（既定 60 秒）まで待っていた問題を直しました。締め切りが近いときは締め切りまでで止めるか、次の回へ回します。締め切りで止めた分は失敗に数えず、次の回で続けて変換します。
+* 変換の途中で PHP の処理が終わったとき、動いている cavif を止めてから一時ファイルを消すようにしました。
 
 = 1.0.1 =
 * サーバーの PHP（GD・Imagick）が AVIF を作れないときに、変換プログラムの cavif を使って AVIF を作れるようにしました（任意。設定画面の「cavif の場所」に場所を入力したときだけ動きます。wp-config.php でも指定できます）。

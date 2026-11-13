@@ -785,7 +785,23 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 				// ただし、この呼び出しでまだ 1 回も変換していなければ、締め切りを無視して 1 つは進める。
 				// （締め切りが極端に短くても、毎回「何もできず時間切れ」にならないように。
 				// すでに変換済みのペアを確認しただけでは、進んだことにしない。）
-				if ( $deadline > 0 && ( $attempted > 0 || ! empty( $args['strict_deadline'] ) ) && ( microtime( true ) + $reserve ) >= $deadline ) {
+				$defer = $deadline > 0 && ( $attempted > 0 || ! empty( $args['strict_deadline'] ) ) && ( microtime( true ) + $reserve ) >= $deadline;
+				$pair  = null;
+				if ( ! $defer ) {
+					// 締め切りを守る組（上の 2 つの判定と同じ条件）は、変換エンジンにも締め切りを渡す（cavif は締め切りまでしか待たない）。
+					// 守らない組（この呼び出しで最初に変換する組）は渡さない（今までどおり 1 枚の上限まで待つ）。
+					$honor                        = $deadline > 0 && ( $attempted > 0 || ! empty( $args['strict_deadline'] ) || $repeat_wf );
+					$pair_args['engine_deadline'] = $honor ? $deadline : 0.0;
+					$pair                         = self::process_pair( $f, $format, $old, $same_src, $pair_args, $src_size, $src_mtime, $owned );
+					if ( ! empty( $pair['time_up'] ) ) {
+						// 締め切りで止めた（または始めなかった）。失敗ではないので札は付けず、始めなかった組と同じに扱う（下の枝）。
+						if ( $repeat_wf ) {
+							continue; // 所有している write_failed の自動の再試行は、上と同じく未解決に数えない（記録は前のまま）。
+						}
+						$defer = true;
+					}
+				}
+				if ( $defer ) {
 					// 始めなかった組が、まだ処理を要するなら未解決に数える（この呼び出しを partial にし、続きで処理する）。
 					// 前回の記録を引き継いだ組も、needs_work() と同じ規則（pair_needs_work）で見る: 設定の切り替えで古くなった札、
 					// 消えた変換ファイル、劣化なしに戻したときの片付けを、「済み」と数えて取り残さない。
@@ -822,7 +838,6 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 				}
 
 				$retain_po = false;
-				$pair      = self::process_pair( $f, $format, $old, $same_src, $pair_args, $src_size, $src_mtime, $owned );
 				$tried_engine = ! empty( $pair['attempted'] ); // 進みに数えるかは、下の片付けまで終えた最後の結果で決める。
 				// この回で処理した組に札を付ける（作り直しは今どおり全部の組。以前の失敗の再試行は、前回の札をそのまま返しただけの組を除く）。
 				if ( $args['force'] || ( $args['retry_failed'] && empty( $pair['kept'] ) ) ) {
@@ -1173,10 +1188,16 @@ final class Kashiwazaki_Next_Gen_Images_Converter {
 		$opts     = array(
 			'quality'  => (int) ( 'webp' === $format ? $settings['webp_quality'] : $settings['avif_quality'] ),
 			'lossless' => self::lossless_wanted( $f['mime'], $format ),
+			'deadline' => isset( $args['engine_deadline'] ) ? (float) $args['engine_deadline'] : 0.0, // 0 は締め切りなし。
 		);
 
 		$tmp = $dest . '.' . wp_generate_password( 8, false ) . '.tmp';
 		$res = Kashiwazaki_Next_Gen_Images_Engine::convert( $f['path'], $f['mime'], $tmp, $format, $opts );
+		if ( is_wp_error( $res ) && 'time_up' === $res->get_error_code() ) {
+			// 締め切りで止めた（失敗ではない）。札は付けず、呼び出し元が「締め切りで始めなかった組」と同じに扱う。
+			Kashiwazaki_Next_Gen_Images_Engine::remove_tmp( $tmp );
+			return array( 'time_up' => true );
+		}
 		if ( is_wp_error( $res ) ) {
 			Kashiwazaki_Next_Gen_Images_Engine::remove_tmp( $tmp );
 			return array(

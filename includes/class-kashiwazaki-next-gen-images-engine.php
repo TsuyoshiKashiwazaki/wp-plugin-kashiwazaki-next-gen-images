@@ -56,6 +56,18 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 	private static $shutdown_registered = false;
 
 	/**
+	 * いま動いている外部プログラム（cavif）。PHP が途中で終わったとき、終了時の掃除で止めるため。
+	 *
+	 * @var resource|null
+	 */
+	private static $running = null;
+
+	/**
+	 * cavif を起動するのに、締め切りまで最低限残っているべき秒数。これより少なければ起動しない。
+	 */
+	const CAVIF_MIN_WAIT = 2.0;
+
+	/**
 	 * 動作確認の結果を保存するキー。
 	 *
 	 * コマンドライン（WP-CLI・cron）と Web では、同じサーバーでも PHP の拡張が違うことがよくある
@@ -368,6 +380,12 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 				$result = new WP_Error( 'engine_error', $engine . ': ' . $e->getMessage() );
 			}
 
+			if ( is_wp_error( $result ) && 'time_up' === $result->get_error_code() ) {
+				// 締め切りで止めた（または始めなかった）。別のエンジンで続けると締め切りを越えるので、ここで返す。
+				// 呼び出し元は失敗ではなく「時間切れ・続きで処理」として扱う。
+				self::remove_tmp( $dest );
+				return $result;
+			}
 			if ( is_wp_error( $result ) ) {
 				if ( null === $first_error ) {
 					$first_error = $result;
@@ -1456,6 +1474,13 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 			return new WP_Error( 'engine_error', 'cavif: destination must be an absolute path' );
 		}
 
+		// 変換の締め切り（microtime の絶対時刻。0 か無ければ締め切りなし）。呼び出し元がこの組で締め切りを守るときだけ渡す。
+		// 残りが少なければ cavif を起動しない（起動しても締め切りまでに終わらず、締め切りを越えて待つことになる）。
+		$deadline = isset( $opts['deadline'] ) ? (float) $opts['deadline'] : 0.0;
+		if ( $deadline > 0 && ( $deadline - microtime( true ) ) < self::CAVIF_MIN_WAIT ) {
+			return new WP_Error( 'time_up', 'cavif: not started (deadline)' );
+		}
+
 		$img = self::gd_load_normalized( $src, $mime, $size );
 		if ( is_wp_error( $img ) ) {
 			return $img;
@@ -1482,6 +1507,19 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 		// 1 枚にかけてよい秒数。超えたら止めて、失敗として扱う（止まったままのプログラムを残さない）。
 		// 画面からの処理は、サーバーが応答を待つ時間に収まるよう短めに。コマンドライン（WP-CLI）には待ち時間の制限が無いので長めにする。
 		$timeout = max( 1.0, min( 600.0, (float) apply_filters( 'kashiwazaki_next_gen_images_cavif_timeout', ( 'cli' === PHP_SAPI ) ? 300 : 60 ) ) );
+		// 締め切りがあれば、待つのは締め切りまで（中間ファイルを作るのに使った時間を引いて、もう一度確かめる）。
+		$cut_by_deadline = false;
+		if ( $deadline > 0 ) {
+			$left = $deadline - microtime( true );
+			if ( $left < self::CAVIF_MIN_WAIT ) {
+				self::remove_tmp( $png );
+				return new WP_Error( 'time_up', 'cavif: not started (deadline)' );
+			}
+			if ( $left < $timeout ) {
+				$timeout         = $left;
+				$cut_by_deadline = true;
+			}
+		}
 
 		$run = self::run_process(
 			array(
@@ -1509,6 +1547,11 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 			return new WP_Error( 'engine_error', 'cavif: ' . $run->get_error_message() );
 		}
 		if ( $run['timed_out'] ) {
+			// 締め切りで縮めた待ちで止めたなら、失敗ではなく時間切れ（続きの呼び出しで、もう一度試す）。
+			// 縮めていない待ち（1 枚の上限）で止めたなら、今までどおり失敗。
+			if ( $cut_by_deadline ) {
+				return new WP_Error( 'time_up', 'cavif: stopped at the deadline' );
+			}
 			return new WP_Error( 'engine_error', 'cavif: timed out' );
 		}
 		if ( 0 !== $run['code'] ) {
@@ -1565,6 +1608,9 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 		if ( ! is_resource( $proc ) ) {
 			return new WP_Error( 'engine_error', 'could not start the program' );
 		}
+		// PHP が途中で終わっても（exit など）、終了時の掃除でこのプログラムを止められるよう覚えておく。
+		self::$running = $proc;
+		self::ensure_shutdown();
 		foreach ( $pipes as $pipe ) {
 			stream_set_blocking( $pipe, false );
 		}
@@ -1599,6 +1645,7 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 		foreach ( $pipes as $pipe ) {
 			fclose( $pipe ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 		}
+		self::$running = null;
 		proc_close( $proc );
 
 		return array(
@@ -1711,6 +1758,15 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 	 */
 	public static function register_tmp( $path ) {
 		self::$tmp_files[ $path ] = true;
+		self::ensure_shutdown();
+	}
+
+	/**
+	 * 終了時の掃除（cleanup_tmp）を、まだなら登録する。
+	 *
+	 * @return void
+	 */
+	private static function ensure_shutdown() {
 		if ( ! self::$shutdown_registered ) {
 			self::$shutdown_registered = true;
 			register_shutdown_function( array( __CLASS__, 'cleanup_tmp' ) );
@@ -1736,6 +1792,21 @@ final class Kashiwazaki_Next_Gen_Images_Engine {
 	 * @return void
 	 */
 	public static function cleanup_tmp() {
+		// 動いている外部プログラム（cavif）が残っていれば、先に止める（止めないと、消した一時ファイルを書き直したり、
+		// PHP が終わった後も CPU を使い続けたりする）。止まったことを確かめてから一時ファイルを消す（最大 5 秒）。
+		// PHP が SIGTERM・SIGKILL で終わったときなどは、この関数自体が呼ばれない（PHP マニュアル register_shutdown_function）。
+		if ( is_resource( self::$running ) ) {
+			$proc          = self::$running;
+			self::$running = null;
+			proc_terminate( $proc, 9 );
+			for ( $i = 0; $i < 250; $i++ ) {
+				$status = proc_get_status( $proc );
+				if ( empty( $status['running'] ) ) {
+					break;
+				}
+				usleep( 20000 );
+			}
+		}
 		foreach ( array_keys( self::$tmp_files ) as $path ) {
 			self::remove_tmp( $path );
 		}

@@ -3,7 +3,7 @@
 ![WordPress](https://img.shields.io/badge/WordPress-5.9%2B-blue.svg)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)
 ![License](https://img.shields.io/badge/License-GPL--2.0--or--later-green.svg)
-![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)
 
 WordPress のメディアライブラリの画像（JPEG・PNG・GIF・WebP）を、軽い次世代の画像形式 **WebP・AVIF** に変換し、対応しているブラウザにだけ軽い画像を表示するプラグインです。**元の画像は削除も変更もしません。**
 
@@ -69,7 +69,7 @@ define( 'KASHIWAZAKI_NEXT_GEN_IMAGES_CAVIF', '/home/アカウント名/bin/cavif
 |---|---|---|
 | `kashiwazaki_next_gen_images_cavif_threads` | 2 | 同時に使う CPU の数（1〜64） |
 | `kashiwazaki_next_gen_images_cavif_speed` | 6 | 変換の速さ（1 = 遅いが小さい 〜 10 = 速いが粗い） |
-| `kashiwazaki_next_gen_images_cavif_timeout` | 60（WP-CLI は 300） | 1 枚の変換を打ち切るまでの秒数（1〜600） |
+| `kashiwazaki_next_gen_images_cavif_timeout` | 60（WP-CLI は 300） | 1 枚の変換を打ち切るまでの秒数（1〜600）。1 回の処理の締め切りが近いときは、それより短く打ち切る（その分は失敗に数えず、次の回で続ける） |
 
 ## ライセンス
 

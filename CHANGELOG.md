@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-11-13
+
+### Fixed
+- cavif で AVIF を作るとき、1 回の処理（一括変換の 1 区切り・アップロード直後の変換・今すぐ変換など）の締め切りを見ずに、1 枚の上限（既定 60 秒）まで待っていた問題を直した。締め切りが近いときは、cavif を締め切りまでで止めるか、始めずに次の回へ回す。締め切りで止めた分は失敗に数えず、次の回で続けて変換する（一括変換・今すぐ変換などで、その回で最初に変換する 1 枚は、今までどおり上限まで待つ。アップロード直後の変換は、最初の 1 枚から締め切りを守る）。
+- 締め切りで止めた AVIF を、Imagick・GD で作り直そうとしないようにした（締め切りをさらに越えないように）。
+- 変換の途中で PHP の処理が終わったとき（exit など）、動いている cavif を止めてから一時ファイルを消すようにした。
+
 ## [1.0.1] - 2026-11-12
 
 ### Added
